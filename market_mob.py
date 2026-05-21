@@ -23,6 +23,7 @@ from agents.pick_extractor.llm_extractor import (
 from output.obsidian.report_formatter import format_daily_report, save_report
 from ingestion.youtube import extract_video_id
 from ingestion.youtube import pipeline as youtube_pipeline
+from analysis.accuracy_tracker import AccuracyTracker
 
 
 def load_sources_config(path: str = "config/sources.json") -> dict:
@@ -74,7 +75,18 @@ def analyze_ticker(ticker: str, source: str = "manual") -> Optional[str]:
         print(f"[ERROR] LLM analysis failed for {ticker}")
         return None
 
-    # Step 4: Format and save report
+    # Step 4: Record prediction via accuracy tracker
+    tracker = AccuracyTracker()
+    tracker.record_prediction(
+        ticker=ticker,
+        prediction_7d=analysis.prediction_7d,
+        prediction_30d=analysis.prediction_30d,
+        confidence=analysis.confidence,
+        source=source,
+        price_at_prediction=indicators_summary.get("price", 0.0),
+    )
+
+    # Step 5: Format and save report
     report = format_daily_report(ticker, {}, indicators_summary, analysis, source=source)
     filepath = save_report(ticker, report)
 
@@ -154,6 +166,12 @@ def run_daily_analysis(tickers: Optional[List[str]] = None) -> List[str]:
         return []
 
     print(f"[MARKET_MOB] Running daily analysis for {len(tickers)} tickers: {tickers}")
+
+    # Score any pending predictions before generating new reports
+    tracker = AccuracyTracker()
+    scored = tracker.score_pending_predictions()
+    if scored["7d"] > 0 or scored["30d"] > 0:
+        print(f"[MARKET_MOB] Scored {scored['7d']} 7-day and {scored['30d']} 30-day predictions")
 
     reports = []
     for ticker in tickers:

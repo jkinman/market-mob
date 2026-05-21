@@ -3,6 +3,43 @@
 from datetime import datetime
 
 from agents.analyst.llm_analyst import AnalysisResult
+from analysis.accuracy_tracker import AccuracyTracker
+
+
+def format_accuracy_section() -> str:
+    """Generate an accuracy stats markdown section.
+
+    Returns:
+        Markdown string with overall accuracy % and breakdown.
+    """
+    tracker = AccuracyTracker()
+    stats = tracker.get_accuracy_stats()
+
+    if stats["total_predictions"] == 0:
+        return """## Prediction Accuracy
+
+No predictions recorded yet.
+"""
+
+    lines = [
+        "## Prediction Accuracy",
+        "",
+        f"- **Total Predictions**: {stats['total_predictions']}",
+        f"- **7-Day Scored**: {stats['scored_7d']}",
+        f"- **30-Day Scored**: {stats['scored_30d']}",
+    ]
+
+    for timeframe in ["7d", "30d"]:
+        total = stats[f"scored_{timeframe}"]
+        if total > 0:
+            pct = stats[f"accuracy_{timeframe}"].get("pct_correct", 0.0)
+            correct = stats[f"accuracy_{timeframe}"]["correct"]
+            directional = stats[f"accuracy_{timeframe}"]["directionally_correct"]
+            wrong = stats[f"accuracy_{timeframe}"]["wrong"]
+            lines.append(f"- **{timeframe} Accuracy**: {pct}% correct ({correct} correct, {directional} directionally correct, {wrong} wrong)")
+
+    lines.append("")
+    return "\n".join(lines)
 
 
 def format_daily_report(
@@ -69,7 +106,7 @@ status: active
 - Generated: {now}
 - [[Stock Watchlist]]
 
----
+{format_accuracy_section()}---
 *Not financial advice. AI-generated analysis.*
 """
 
