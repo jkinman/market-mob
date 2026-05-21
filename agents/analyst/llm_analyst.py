@@ -152,7 +152,7 @@ def _call_ollama(prompt: str, model: Optional[str] = None) -> str:
 
 
 def _call_openai(prompt: str, model: Optional[str] = None) -> str:
-    """Call OpenAI API."""
+    """Call OpenAI-compatible API (supports xAI Grok, etc.)."""
     import requests
 
     api_key = os.getenv("OPENAI_API_KEY")
@@ -160,9 +160,10 @@ def _call_openai(prompt: str, model: Optional[str] = None) -> str:
         raise ValueError("OPENAI_API_KEY not set")
 
     model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
     response = requests.post(
-        "https://api.openai.com/v1/chat/completions",
+        f"{base_url}/chat/completions",
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",

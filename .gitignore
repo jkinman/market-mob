@@ -7,3 +7,6 @@ venv/
 data/transcripts/*.txt
 data/picks/*.json
 *.log
+.env.local
+data/predictions.json
+output/obsidian/*.md
