@@ -2,7 +2,7 @@
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Callable
 
 
@@ -18,6 +18,33 @@ class AnalysisResult:
     prediction_30d: str
     confidence: str
     risk_level: str
+    reasoning: str
+    raw_response: str
+
+
+@dataclass
+class OverviewResult:
+    """Container for market overview analysis output."""
+
+    market_sentiment: str
+    sector_trends: dict
+    watchlist_health: str
+    breadth_summary: str
+    top_opportunities: list[str]
+    top_risks: list[str]
+    reasoning: str
+    raw_response: str
+
+
+@dataclass
+class AlphaResult:
+    """Container for daily alpha analysis output."""
+
+    volatile_tickers: list[str]
+    suspicious_moves: list[dict]
+    opportunity_setups: list[dict]
+    contrarian_signals: list[dict]
+    insider_signals: list[str]
     reasoning: str
     raw_response: str
 
@@ -77,6 +104,137 @@ No markdown, no explanation outside JSON."""
     return prompt
 
 
+def build_overview_prompt(tickers_data: dict) -> str:
+    """Build a market overview prompt for the LLM analyst.
+
+    Args:
+        tickers_data: Dict mapping ticker -> indicators summary dict
+
+    Returns:
+        Formatted prompt string
+    """
+    ticker_summaries = []
+    for ticker, data in tickers_data.items():
+        summary = (
+            f"- {ticker}: Price ${data.get('price', 'N/A')}, "
+            f"Change ${data.get('price_change_1d', 'N/A')}, "
+            f"RSI {data.get('rsi_14', 'N/A')}, "
+            f"MACD {data.get('macd', 'N/A')}, "
+            f"SMA20 {data.get('sma_20', 'N/A')}, "
+            f"SMA50 {data.get('sma_50', 'N/A')}, "
+            f"Volume {data.get('volume', 'N/A')}"
+        )
+        ticker_summaries.append(summary)
+
+    summaries_text = "\n".join(ticker_summaries)
+
+    prompt = f"""You are a senior macro strategist at a hedge fund. Provide a broad market overview based on the following watchlist data.
+
+## Watchlist Summary
+{summaries_text}
+
+### Instructions
+1. Assess overall market sentiment (bullish/bearish/neutral/mixed)
+2. Identify sector trends (which sectors are strong/weak)
+3. Assess watchlist health (how many tickers are trending well vs poorly)
+4. Summarize market breadth (advancers vs decliners, RSI distribution)
+5. List top 3 opportunities (tickers with best setups)
+6. List top 3 risks (tickers showing weakness or warning signs)
+7. Provide concise reasoning (3-5 sentences)
+
+Output STRICTLY as JSON:
+{{
+  "market_sentiment": "bullish|bearish|neutral|mixed",
+  "sector_trends": {{"tech": "strong", "energy": "weak"}},
+  "watchlist_health": "healthy|mixed|unhealthy",
+  "breadth_summary": "X advancers, Y decliners, average RSI Z",
+  "top_opportunities": ["TICKER: reason", "TICKER: reason", "TICKER: reason"],
+  "top_risks": ["TICKER: reason", "TICKER: reason", "TICKER: reason"],
+  "reasoning": "..."
+}}
+
+No markdown, no explanation outside JSON."""
+
+    return prompt
+
+
+def build_alpha_prompt(tickers_data: dict, suspicious_moves: list) -> str:
+    """Build a daily alpha prompt for the LLM analyst.
+
+    Args:
+        tickers_data: Dict mapping ticker -> indicators summary dict
+        suspicious_moves: List of SuspiciousMove-like dicts or dataclasses
+
+    Returns:
+        Formatted prompt string
+    """
+    ticker_summaries = []
+    for ticker, data in tickers_data.items():
+        summary = (
+            f"- {ticker}: Price ${data.get('price', 'N/A')}, "
+            f"Change ${data.get('price_change_1d', 'N/A')}, "
+            f"RSI {data.get('rsi_14', 'N/A')}, "
+            f"MACD {data.get('macd', 'N/A')}, "
+            f"Volume {data.get('volume', 'N/A')}"
+        )
+        ticker_summaries.append(summary)
+
+    summaries_text = "\n".join(ticker_summaries)
+
+    moves_text = "None detected"
+    if suspicious_moves:
+        move_lines = []
+        for move in suspicious_moves:
+            if hasattr(move, "ticker"):
+                line = (
+                    f"- {move.ticker}: {move.move_pct}% {move.direction}, "
+                    f"volume {move.volume_vs_avg}x avg, reason: {move.flagged_reason}"
+                )
+            else:
+                line = (
+                    f"- {move.get('ticker', 'UNKNOWN')}: {move.get('move_pct', 'N/A')}% "
+                    f"{move.get('direction', 'N/A')}, volume {move.get('volume_vs_avg', 'N/A')}x avg"
+                )
+            move_lines.append(line)
+        moves_text = "\n".join(move_lines)
+
+    prompt = f"""You are a senior alpha hunter at a hedge fund. Find volatile stocks, suspicious moves, and opportunity setups from the following data.
+
+## Watchlist Summary
+{summaries_text}
+
+## Suspicious Moves
+{moves_text}
+
+### Instructions
+1. List volatile tickers (largest moves, widest ranges, unusual volume)
+2. Summarize suspicious moves (what's moving without clear catalyst)
+3. Identify opportunity setups (breakouts, reversals, squeeze candidates)
+4. List contrarian signals (oversold bounces, overbought shorts, divergences)
+5. Flag any insider-like signals (unusual pre-move volume, gap patterns)
+6. Provide concise reasoning (3-5 sentences)
+
+Output STRICTLY as JSON:
+{{
+  "volatile_tickers": ["TICKER", "TICKER"],
+  "suspicious_moves": [
+    {{"ticker": "TICKER", "move_pct": 12.5, "direction": "up", "notes": "..."}}
+  ],
+  "opportunity_setups": [
+    {{"ticker": "TICKER", "setup": "breakout|reversal|squeeze", "notes": "..."}}
+  ],
+  "contrarian_signals": [
+    {{"ticker": "TICKER", "signal": "oversold_bounce|overbought_short|divergence", "notes": "..."}}
+  ],
+  "insider_signals": ["TICKER: unusual volume pattern", "TICKER: gap up pre-news"],
+  "reasoning": "..."
+}}
+
+No markdown, no explanation outside JSON."""
+
+    return prompt
+
+
 def parse_analysis_response(response: str, ticker: str) -> Optional[AnalysisResult]:
     """Parse LLM JSON response into AnalysisResult.
 
@@ -88,17 +246,7 @@ def parse_analysis_response(response: str, ticker: str) -> Optional[AnalysisResu
         AnalysisResult or None if parsing fails
     """
     try:
-        # Extract JSON from response (handle markdown code blocks)
-        cleaned = response.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        if cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
-
-        data = json.loads(cleaned)
+        data = _extract_json(response)
 
         return AnalysisResult(
             ticker=ticker,
@@ -116,6 +264,74 @@ def parse_analysis_response(response: str, ticker: str) -> Optional[AnalysisResu
         print(f"[ERROR] Failed to parse LLM response: {e}")
         print(f"[ERROR] Raw response: {response[:500]}")
         return None
+
+
+def parse_overview_response(response: str) -> Optional[OverviewResult]:
+    """Parse LLM JSON response into OverviewResult.
+
+    Args:
+        response: Raw LLM output (should contain JSON)
+
+    Returns:
+        OverviewResult or None if parsing fails
+    """
+    try:
+        data = _extract_json(response)
+
+        return OverviewResult(
+            market_sentiment=data.get("market_sentiment", "unknown"),
+            sector_trends=data.get("sector_trends", {}),
+            watchlist_health=data.get("watchlist_health", "unknown"),
+            breadth_summary=data.get("breadth_summary", ""),
+            top_opportunities=data.get("top_opportunities", []),
+            top_risks=data.get("top_risks", []),
+            reasoning=data.get("reasoning", ""),
+            raw_response=response,
+        )
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"[ERROR] Failed to parse overview response: {e}")
+        print(f"[ERROR] Raw response: {response[:500]}")
+        return None
+
+
+def parse_alpha_response(response: str) -> Optional[AlphaResult]:
+    """Parse LLM JSON response into AlphaResult.
+
+    Args:
+        response: Raw LLM output (should contain JSON)
+
+    Returns:
+        AlphaResult or None if parsing fails
+    """
+    try:
+        data = _extract_json(response)
+
+        return AlphaResult(
+            volatile_tickers=data.get("volatile_tickers", []),
+            suspicious_moves=data.get("suspicious_moves", []),
+            opportunity_setups=data.get("opportunity_setups", []),
+            contrarian_signals=data.get("contrarian_signals", []),
+            insider_signals=data.get("insider_signals", []),
+            reasoning=data.get("reasoning", ""),
+            raw_response=response,
+        )
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"[ERROR] Failed to parse alpha response: {e}")
+        print(f"[ERROR] Raw response: {response[:500]}")
+        return None
+
+
+def _extract_json(response: str) -> dict:
+    """Extract and parse JSON from LLM response, handling markdown code blocks."""
+    cleaned = response.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    cleaned = cleaned.strip()
+    return json.loads(cleaned)
 
 
 # Default LLM caller — can be overridden for testing or different providers
@@ -208,6 +424,64 @@ def analyze_stock(
         return None
 
 
+def analyze_overview(
+    tickers_data: dict,
+    llm_caller: Optional[Callable[[str], str]] = None,
+) -> Optional[OverviewResult]:
+    """Run a market overview analysis on a watchlist using LLM.
+
+    Args:
+        tickers_data: Dict mapping ticker -> indicators summary dict
+        llm_caller: Optional custom LLM function (for testing)
+
+    Returns:
+        OverviewResult or None if analysis fails
+    """
+    if not tickers_data:
+        print("[ERROR] No ticker data provided for overview")
+        return None
+
+    prompt = build_overview_prompt(tickers_data)
+    caller = llm_caller or _default_llm_call
+
+    try:
+        response = caller(prompt)
+        return parse_overview_response(response)
+    except Exception as e:
+        print(f"[ERROR] LLM overview analysis failed: {e}")
+        return None
+
+
+def analyze_alpha(
+    tickers_data: dict,
+    suspicious_moves: list,
+    llm_caller: Optional[Callable[[str], str]] = None,
+) -> Optional[AlphaResult]:
+    """Run a daily alpha scan on a watchlist using LLM.
+
+    Args:
+        tickers_data: Dict mapping ticker -> indicators summary dict
+        suspicious_moves: List of SuspiciousMove-like objects or dicts
+        llm_caller: Optional custom LLM function (for testing)
+
+    Returns:
+        AlphaResult or None if analysis fails
+    """
+    if not tickers_data:
+        print("[ERROR] No ticker data provided for alpha scan")
+        return None
+
+    prompt = build_alpha_prompt(tickers_data, suspicious_moves)
+    caller = llm_caller or _default_llm_call
+
+    try:
+        response = caller(prompt)
+        return parse_alpha_response(response)
+    except Exception as e:
+        print(f"[ERROR] LLM alpha analysis failed: {e}")
+        return None
+
+
 if __name__ == "__main__":
     # Smoke test with dummy data
     dummy_price = {"latest_close": 150.0, "days_of_data": 90}
@@ -245,3 +519,13 @@ if __name__ == "__main__":
     result = parse_analysis_response(mock_response, "AAPL")
     if result:
         print(f"\nParsed result: {result.trend}, confidence={result.confidence}")
+
+    # Test overview prompt
+    overview_prompt = build_overview_prompt({"AAPL": dummy_indicators, "TSLA": dummy_indicators})
+    print("\nOverview prompt built successfully:")
+    print(overview_prompt[:500] + "...")
+
+    # Test alpha prompt
+    alpha_prompt = build_alpha_prompt({"AAPL": dummy_indicators}, [])
+    print("\nAlpha prompt built successfully:")
+    print(alpha_prompt[:500] + "...")

@@ -7,6 +7,9 @@ Wires together:
 3. Output (markdown report → Obsidian vault)
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import json
 import os
 from datetime import datetime
@@ -14,7 +17,7 @@ from typing import Optional, List
 
 from analysis.technical.fetch_prices import fetch_prices
 from analysis.technical.indicators import compute_all, summarize_latest
-from agents.analyst.llm_analyst import analyze_stock, AnalysisResult
+from agents.analyst.llm_analyst import analyze_stock, analyze_overview, analyze_alpha, AnalysisResult
 from agents.pick_extractor.llm_extractor import (
     extract_picks_from_transcript,
     picks_to_watchlist,
@@ -27,6 +30,7 @@ from analysis.accuracy_tracker import AccuracyTracker
 from analysis.sector.discovery import get_sector_tickers, list_sectors
 from analysis.sector.basket_analyzer import analyze_sector
 from analysis.sector.sector_report import generate_sector_report, save_sector_report
+from analysis.technical.suspicious_moves import scan_tickers, SuspiciousMove
 
 
 def load_sources_config(path: str = "config/sources.json") -> dict:
@@ -220,6 +224,186 @@ def run_daily_analysis(tickers: Optional[List[str]] = None) -> List[str]:
     return reports
 
 
+def _fetch_watchlist_indicators(tickers: List[str]) -> tuple[dict, list]:
+    """Fetch price data and compute indicators for a list of tickers.
+
+    Returns:
+        Tuple of (tickers_data dict, list of SuspiciousMove objects)
+    """
+    from analysis.technical.fetch_prices import PriceData
+
+    tickers_data: dict = {}
+    price_data_map: dict[str, Optional[PriceData]] = {}
+
+    for ticker in tickers:
+        price_data = fetch_prices(ticker, period="90d")
+        if price_data is None or price_data.df.empty or len(price_data.df) < 2:
+            continue
+        df = compute_all(price_data.df)
+        indicators_summary = summarize_latest(df)
+        tickers_data[ticker] = indicators_summary
+        price_data_map[ticker] = price_data
+
+    # Scan for suspicious moves
+    suspicious_moves = scan_tickers(price_data_map, threshold_pct=10.0)
+
+    return tickers_data, suspicious_moves
+
+
+def run_overview(tickers: Optional[List[str]] = None) -> Optional[str]:
+    """Run market overview analysis on watchlist.
+
+    Args:
+        tickers: Optional list of tickers (defaults to active watchlist)
+
+    Returns:
+        Path to saved report, or None if analysis fails
+    """
+    if tickers is None:
+        watchlist = load_watchlist()
+        tickers = list(set([entry["ticker"] for entry in watchlist if entry.get("status") == "active"]))
+
+    if not tickers:
+        print("[MARKET_MOB] No tickers to analyze")
+        return None
+
+    print(f"[MARKET_MOB] Running market overview for {len(tickers)} tickers: {tickers}")
+
+    tickers_data, _ = _fetch_watchlist_indicators(tickers)
+    if not tickers_data:
+        print("[ERROR] Could not fetch data for any tickers")
+        return None
+
+    overview = analyze_overview(tickers_data)
+    if overview is None:
+        print("[ERROR] Overview analysis failed")
+        return None
+
+    # Format report
+    report_lines = [
+        f"# Market Overview — {datetime.now().strftime('%Y-%m-%d')}",
+        "",
+        f"**Market Sentiment:** {overview.market_sentiment}",
+        f"**Watchlist Health:** {overview.watchlist_health}",
+        "",
+        "## Sector Trends",
+    ]
+    for sector, trend in overview.sector_trends.items():
+        report_lines.append(f"- **{sector}:** {trend}")
+    report_lines.extend([
+        "",
+        "## Breadth Summary",
+        overview.breadth_summary,
+        "",
+        "## Top Opportunities",
+    ])
+    for opp in overview.top_opportunities:
+        report_lines.append(f"- {opp}")
+    report_lines.extend([
+        "",
+        "## Top Risks",
+    ])
+    for risk in overview.top_risks:
+        report_lines.append(f"- {risk}")
+    report_lines.extend([
+        "",
+        "## Reasoning",
+        overview.reasoning,
+    ])
+
+    report = "\n".join(report_lines)
+
+    # Save to output/obsidian
+    os.makedirs("output/obsidian", exist_ok=True)
+    filename = f"overview_{datetime.now().strftime('%Y-%m-%d')}.md"
+    filepath = os.path.join("output/obsidian", filename)
+    with open(filepath, "w") as f:
+        f.write(report)
+
+    print(f"[MARKET_MOB] Overview report saved: {filepath}")
+    return filepath
+
+
+def run_alpha(tickers: Optional[List[str]] = None) -> Optional[str]:
+    """Run daily alpha scan on watchlist.
+
+    Args:
+        tickers: Optional list of tickers (defaults to active watchlist)
+
+    Returns:
+        Path to saved report, or None if analysis fails
+    """
+    if tickers is None:
+        watchlist = load_watchlist()
+        tickers = list(set([entry["ticker"] for entry in watchlist if entry.get("status") == "active"]))
+
+    if not tickers:
+        print("[MARKET_MOB] No tickers to analyze")
+        return None
+
+    print(f"[MARKET_MOB] Running alpha scan for {len(tickers)} tickers: {tickers}")
+
+    tickers_data, suspicious_moves = _fetch_watchlist_indicators(tickers)
+    if not tickers_data:
+        print("[ERROR] Could not fetch data for any tickers")
+        return None
+
+    alpha = analyze_alpha(tickers_data, suspicious_moves)
+    if alpha is None:
+        print("[ERROR] Alpha analysis failed")
+        return None
+
+    # Format report
+    report_lines = [
+        f"# Daily Alpha — {datetime.now().strftime('%Y-%m-%d')}",
+        "",
+        "## Volatile Tickers",
+    ]
+    for vt in alpha.volatile_tickers:
+        report_lines.append(f"- {vt}")
+    report_lines.extend([
+        "",
+        "## Suspicious Moves",
+    ])
+    for move in alpha.suspicious_moves:
+        report_lines.append(f"- **{move.get('ticker', 'UNKNOWN')}:** {move.get('move_pct', 'N/A')}% {move.get('direction', 'N/A')} — {move.get('notes', '')}")
+    report_lines.extend([
+        "",
+        "## Opportunity Setups",
+    ])
+    for setup in alpha.opportunity_setups:
+        report_lines.append(f"- **{setup.get('ticker', 'UNKNOWN')}** ({setup.get('setup', 'N/A')}): {setup.get('notes', '')}")
+    report_lines.extend([
+        "",
+        "## Contrarian Signals",
+    ])
+    for signal in alpha.contrarian_signals:
+        report_lines.append(f"- **{signal.get('ticker', 'UNKNOWN')}** ({signal.get('signal', 'N/A')}): {signal.get('notes', '')}")
+    report_lines.extend([
+        "",
+        "## Insider Signals",
+    ])
+    for ins in alpha.insider_signals:
+        report_lines.append(f"- {ins}")
+    report_lines.extend([
+        "",
+        "## Reasoning",
+        alpha.reasoning,
+    ])
+
+    report = "\n".join(report_lines)
+
+    # Save to output/obsidian
+    os.makedirs("output/obsidian", exist_ok=True)
+    filename = f"alpha_{datetime.now().strftime('%Y-%m-%d')}.md"
+    filepath = os.path.join("output/obsidian", filename)
+    with open(filepath, "w") as f:
+        f.write(report)
+
+    print(f"[MARKET_MOB] Alpha report saved: {filepath}")
+    return filepath
+
+
 if __name__ == "__main__":
     import sys
 
@@ -228,6 +412,8 @@ if __name__ == "__main__":
         print("  python market_mob.py analyze <TICKER>     # Analyze single ticker")
         print("  python market_mob.py sector <SECTOR>      # Analyze sector (mining, tech, energy, etc.)")
         print("  python market_mob.py daily                # Analyze watchlist")
+        print("  python market_mob.py overview             # Market overview on watchlist")
+        print("  python market_mob.py alpha                # Alpha scan on watchlist")
         print("  python market_mob.py youtube <URL>        # Process YouTube video")
         sys.exit(1)
 
@@ -243,6 +429,12 @@ if __name__ == "__main__":
 
     elif command == "daily":
         run_daily_analysis()
+
+    elif command == "overview":
+        run_overview()
+
+    elif command == "alpha":
+        run_alpha()
 
     elif command == "youtube" and len(sys.argv) >= 3:
         url = sys.argv[2]
