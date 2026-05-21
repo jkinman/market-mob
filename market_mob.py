@@ -34,6 +34,12 @@ from analysis.sector.sector_report import generate_sector_report, save_sector_re
 from analysis.technical.suspicious_moves import scan_tickers, SuspiciousMove
 from analysis.sentiment.sentiment_scraper import scrape_sentiment
 from analysis.sentiment.sentiment_formatter import format_sentiment_section
+from analysis.options.options_tracker import (
+    fetch_options_activity,
+    fetch_options_batch,
+    is_unusual_activity,
+    OptionsActivity,
+)
 
 
 def load_sources_config(path: str = "config/sources.json") -> dict:
@@ -98,7 +104,23 @@ def analyze_ticker(ticker: str, source: str = "manual", persona: Optional[Person
     )
 
     # Step 5: Format and save report
-    report = format_daily_report(ticker, {}, indicators_summary, analysis, source=source, persona=persona)
+    options_activity = None
+    try:
+        from analysis.options.options_tracker import fetch_options_activity, is_unusual_activity
+        act = fetch_options_activity(ticker)
+        if act is not None:
+            act.unusual_activity = is_unusual_activity(act)
+            options_activity = {
+                "total_volume": act.total_volume,
+                "call_volume": act.call_volume,
+                "put_volume": act.put_volume,
+                "pcr_ratio": act.pcr_ratio,
+                "unusual_activity": act.unusual_activity,
+            }
+    except Exception as exc:
+        print(f"[WARN] Options activity fetch failed for {ticker}: {exc}")
+
+    report = format_daily_report(ticker, {}, indicators_summary, analysis, source=source, persona=persona, options_activity=options_activity)
 
     # Step 5b: Append sentiment section
     try:
@@ -112,6 +134,27 @@ def analyze_ticker(ticker: str, source: str = "manual", persona: Optional[Person
 
     print(f"[MARKET_MOB] Report saved: {filepath}")
     return filepath
+
+
+def _format_options_section(activity: OptionsActivity) -> str:
+    """Format options activity as markdown."""
+    lines = [
+        "## Options Activity",
+        "",
+        f"- **Total Volume**: {activity.total_volume:,}",
+        f"- **Call Volume**: {activity.call_volume:,}",
+        f"- **Put Volume**: {activity.put_volume:,}",
+        f"- **Call OI**: {activity.call_oi:,}",
+        f"- **Put OI**: {activity.put_oi:,}",
+        f"- **Put/Call Ratio**: {activity.pcr_ratio:.2f}",
+        f"- **Largest Expiry**: {activity.largest_expiry}",
+    ]
+    if activity.unusual_activity:
+        lines.append("- **⚠️ Unusual Activity Detected**")
+    if activity.notes:
+        lines.append(f"- **Notes**: {activity.notes}")
+    lines.append("")
+    return "\n".join(lines)
 
 
 def process_youtube_video(video_url: str, source_name: str, persona: Optional[Persona] = None) -> List[str]:
@@ -196,7 +239,31 @@ def run_sector_analysis(sector_name: str) -> Optional[str]:
         return None
 
     # Step 3: Generate and save report
-    report = generate_sector_report(sector_analysis, source="sector-command")
+    options_summary = None
+    try:
+        from analysis.options.options_tracker import fetch_options_batch
+        options_results = fetch_options_batch(sector_analysis.tickers_analyzed)
+        valid = [v for v in options_results.values() if v is not None]
+        if valid:
+            options_summary = {
+                "tickers_with_data": len(valid),
+                "total_tickers": len(options_results),
+                "avg_pcr": sum(v.pcr_ratio for v in valid) / len(valid),
+                "unusual_count": sum(1 for v in valid if v.unusual_activity),
+                "total_volume": sum(v.total_volume for v in valid),
+                "by_ticker": {
+                    t: {
+                        "total_volume": v.total_volume,
+                        "pcr_ratio": v.pcr_ratio,
+                        "unusual_activity": v.unusual_activity,
+                    }
+                    for t, v in options_results.items() if v is not None
+                },
+            }
+    except Exception as exc:
+        print(f"[WARN] Options batch fetch failed for sector {sector_name}: {exc}")
+
+    report = generate_sector_report(sector_analysis, source="sector-command", options_summary=options_summary)
 
     # Step 3b: Append sentiment for all tickers
     try:
@@ -208,10 +275,50 @@ def run_sector_analysis(sector_name: str) -> Optional[str]:
     except Exception as exc:
         print(f"[WARN] Sentiment scrape failed for sector {sector_name}: {exc}")
 
+    # Step 3c: Append options summary for sector
+    try:
+        options_results = fetch_options_batch(sector_analysis.tickers_analyzed)
+        options_md = _format_sector_options_section(options_results)
+        report = report.rstrip() + "\n\n" + options_md + "\n"
+    except Exception as exc:
+        print(f"[WARN] Options batch fetch failed for sector {sector_name}: {exc}")
+
     filepath = save_sector_report(sector_name, report)
 
     print(f"[MARKET_MOB] Sector report saved: {filepath}")
     return filepath
+
+
+def _format_sector_options_section(options_results: dict[str, Optional[OptionsActivity]]) -> str:
+    """Format aggregated options activity for a sector report."""
+    valid = [v for v in options_results.values() if v is not None]
+    if not valid:
+        return "## Options Activity\n\nNo options data available.\n"
+
+    total_pcr = sum(v.pcr_ratio for v in valid) / len(valid)
+    unusual_count = sum(1 for v in valid if v.unusual_activity)
+    total_volume = sum(v.total_volume for v in valid)
+
+    lines = [
+        "## Options Activity",
+        "",
+        f"- **Tickers with Options Data**: {len(valid)} / {len(options_results)}",
+        f"- **Average Put/Call Ratio**: {total_pcr:.2f}",
+        f"- **Unusual Activity Count**: {unusual_count}",
+        f"- **Total Options Volume**: {total_volume:,}",
+        "",
+        "### By Ticker",
+    ]
+    for ticker, activity in sorted(options_results.items()):
+        if activity is None:
+            lines.append(f"- **{ticker}**: No options data")
+        else:
+            flag = " ⚠️ Unusual" if activity.unusual_activity else ""
+            lines.append(
+                f"- **{ticker}**: Vol {activity.total_volume:,}, PCR {activity.pcr_ratio:.2f}{flag}"
+            )
+    lines.append("")
+    return "\n".join(lines)
 
 
 def run_daily_analysis(tickers: Optional[List[str]] = None, persona: Optional[Persona] = None) -> List[str]:
@@ -418,6 +525,23 @@ def run_alpha(tickers: Optional[List[str]] = None, persona: Optional[Persona] = 
         "## Reasoning",
         alpha.reasoning,
     ])
+
+    # Append options flow alpha signals
+    try:
+        options_results = fetch_options_batch(list(tickers_data.keys()))
+        unusual_options = [
+            (t, act) for t, act in options_results.items()
+            if act is not None and act.unusual_activity
+        ]
+        if unusual_options:
+            report_lines.extend(["", "## Options Flow Signals"])
+            for t, act in unusual_options:
+                report_lines.append(
+                    f"- **{t}**: Unusual options volume ({act.total_volume:,}), PCR {act.pcr_ratio:.2f}"
+                )
+            report_lines.append("")
+    except Exception as exc:
+        print(f"[WARN] Options flow fetch failed for alpha scan: {exc}")
 
     report = "\n".join(report_lines)
 

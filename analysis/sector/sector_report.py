@@ -39,15 +39,40 @@ def _format_suspicious_moves(sector_analysis: SectorAnalysis) -> str:
     return "\n".join(lines)
 
 
+def _format_options_summary(options_summary: Optional[dict]) -> str:
+    """Format aggregated options summary section."""
+    if options_summary is None:
+        return "Options data not available."
+
+    lines = [
+        f"- **Tickers with Options Data**: {options_summary.get('tickers_with_data', 0)} / {options_summary.get('total_tickers', 0)}",
+        f"- **Average Put/Call Ratio**: {options_summary.get('avg_pcr', 'N/A'):.2f}",
+        f"- **Unusual Activity Count**: {options_summary.get('unusual_count', 0)}",
+        f"- **Total Options Volume**: {options_summary.get('total_volume', 0):,}",
+    ]
+    by_ticker = options_summary.get('by_ticker', {})
+    if by_ticker:
+        lines.append("")
+        lines.append("### By Ticker")
+        for ticker, data in sorted(by_ticker.items()):
+            flag = " ⚠️ Unusual" if data.get('unusual_activity') else ""
+            lines.append(
+                f"- **{ticker}**: Vol {data.get('total_volume', 0):,}, PCR {data.get('pcr_ratio', 0):.2f}{flag}"
+            )
+    return "\n".join(lines)
+
+
 def generate_sector_report(
     sector_analysis: SectorAnalysis,
     source: str = "manual",
+    options_summary: Optional[dict] = None,
 ) -> str:
     """Generate a markdown report for a sector analysis.
 
     Args:
         sector_analysis: SectorAnalysis dataclass
         source: Source of the analysis request
+        options_summary: Optional dict with aggregated options metrics
 
     Returns:
         Markdown string
@@ -91,6 +116,9 @@ status: active
 ## Suspicious Moves
 
 {_format_suspicious_moves(sector_analysis)}
+
+## Options Activity
+{_format_options_summary(options_summary)}
 
 ## Sentiment & News
 {sector_analysis.sentiment_placeholder}

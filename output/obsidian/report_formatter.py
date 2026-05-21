@@ -51,6 +51,7 @@ def format_daily_report(
     analysis: AnalysisResult,
     source: str = "manual",
     persona: Optional[Persona] = None,
+    options_activity: Optional[dict] = None,
 ) -> str:
     """Format a single-stock analysis as an Obsidian markdown note.
 
@@ -61,6 +62,7 @@ def format_daily_report(
         analysis: LLM analysis result
         source: Where the pick came from (youtube, manual, etc.)
         persona: Optional investor persona for report context
+        options_activity: Optional dict with options activity data
 
     Returns:
         Markdown string
@@ -90,6 +92,18 @@ def format_daily_report(
             persona_lines.append(f"- **Avg Cost:** ${pos['avg_cost']:.2f}")
 
         persona_section = "\n".join(persona_lines) + "\n\n"
+
+    options_section = ""
+    if options_activity is not None:
+        options_lines = ["## Options Activity", ""]
+        options_lines.append(f"- **Total Volume**: {options_activity.get('total_volume', 'N/A'):,}")
+        options_lines.append(f"- **Call Volume**: {options_activity.get('call_volume', 'N/A'):,}")
+        options_lines.append(f"- **Put Volume**: {options_activity.get('put_volume', 'N/A'):,}")
+        options_lines.append(f"- **Put/Call Ratio**: {options_activity.get('pcr_ratio', 'N/A'):.2f}")
+        if options_activity.get('unusual_activity'):
+            options_lines.append("- **⚠️ Unusual Activity Detected**")
+        options_lines.append("")
+        options_section = "\n".join(options_lines)
 
     report = f"""---
 date: {datetime.now().strftime("%Y-%m-%d")}
@@ -129,7 +143,7 @@ status: active
 ### Reasoning
 {analysis.reasoning}
 
-## Notes
+{options_section}## Notes
 - Source: {source}
 - Generated: {now}
 - [[Stock Watchlist]]
@@ -192,3 +206,16 @@ if __name__ == "__main__":
 
     report = format_daily_report("AAPL", {}, indicators, dummy)
     print(report)
+
+    # Smoke test with options activity
+    options = {
+        "total_volume": 150000,
+        "call_volume": 100000,
+        "put_volume": 50000,
+        "pcr_ratio": 0.5,
+        "unusual_activity": True,
+    }
+    report_with_options = format_daily_report("AAPL", {}, indicators, dummy, options_activity=options)
+    assert "Options Activity" in report_with_options
+    assert "Unusual Activity Detected" in report_with_options
+    print("Options section test passed.")
