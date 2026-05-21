@@ -1,0 +1,10 @@
+{
+  "channels": [
+    {
+      "name": "Financial Advisor Test",
+      "channel_id": "UC...",
+      "trust_level": "high",
+      "note": "Placeholder - need to extract channel ID from https://youtu.be/KgzthZdu8Rk?si=cFIpuExrgf_a6F4B"
+    }
+  ]
+}
