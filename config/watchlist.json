@@ -1,1 +1,7 @@
-[]
+[
+  {"ticker": "QBTS", "source": "yahoo-watchlist", "status": "active", "added": "2026-05-21"},
+  {"ticker": "RGTI", "source": "yahoo-watchlist", "status": "active", "added": "2026-05-21"},
+  {"ticker": "XOM", "source": "yahoo-watchlist", "status": "active", "added": "2026-05-21"},
+  {"ticker": "PLTR", "source": "yahoo-watchlist", "status": "active", "added": "2026-05-21"},
+  {"ticker": "TSLA", "source": "yahoo-watchlist", "status": "active", "added": "2026-05-21"}
+]
