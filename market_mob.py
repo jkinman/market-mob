@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""Market Mob — Main orchestrator.
+
+Wires together:
+1. Ingestion (YouTube transcript → pick extraction)
+2. Analysis (price data → indicators → LLM analysis)
+3. Output (markdown report → Obsidian vault)
+"""
+
+import json
+import os
+from datetime import datetime
+from typing import Optional, List
+
+from analysis.technical.fetch_prices import fetch_prices
+from analysis.technical.indicators import compute_all, summarize_latest
+from agents.analyst.llm_analyst import analyze_stock, AnalysisResult
+from agents.pick_extractor.llm_extractor import (
+    extract_picks_from_transcript,
+    picks_to_watchlist,
+    StockPick,
+)
+from output.obsidian.report_formatter import format_daily_report, save_report
+from ingestion.youtube import extract_video_id
+from ingestion.youtube import pipeline as youtube_pipeline
+
+
+def load_sources_config(path: str = "config/sources.json") -> dict:
+    """Load trusted sources configuration."""
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+def load_watchlist(path: str = "config/watchlist.json") -> List[dict]:
+    """Load active watchlist."""
+    if not os.path.exists(path):
+        return []
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+def save_watchlist(watchlist: List[dict], path: str = "config/watchlist.json") -> None:
+    """Save watchlist to disk."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(watchlist, f, indent=2)
+
+
+def analyze_ticker(ticker: str, source: str = "manual") -> Optional[str]:
+    """Analyze a single ticker end-to-end.
+
+    Args:
+        ticker: Stock symbol
+        source: Where the pick came from
+
+    Returns:
+        Path to saved report, or None if analysis fails
+    """
+    print(f"[MARKET_MOB] Analyzing {ticker}...")
+
+    # Step 1: Fetch prices
+    price_data = fetch_prices(ticker, period="90d")
+    if price_data is None:
+        print(f"[ERROR] Failed to fetch prices for {ticker}")
+        return None
+
+    # Step 2: Compute indicators
+    df = compute_all(price_data.df)
+    indicators_summary = summarize_latest(df)
+
+    # Step 3: LLM analysis
+    analysis = analyze_stock(ticker, {}, indicators_summary)
+    if analysis is None:
+        print(f"[ERROR] LLM analysis failed for {ticker}")
+        return None
+
+    # Step 4: Format and save report
+    report = format_daily_report(ticker, {}, indicators_summary, analysis, source=source)
+    filepath = save_report(ticker, report)
+
+    print(f"[MARKET_MOB] Report saved: {filepath}")
+    return filepath
+
+
+def process_youtube_video(video_url: str, source_name: str) -> List[str]:
+    """Process a YouTube video: extract picks → analyze each → generate reports.
+
+    Args:
+        video_url: YouTube URL
+        source_name: Channel/source name
+
+    Returns:
+        List of saved report file paths
+    """
+    print(f"[MARKET_MOB] Processing video: {video_url}")
+
+    # Step 1: Fetch transcript
+    video_id = extract_video_id(video_url)
+    if not video_id:
+        print(f"[ERROR] Could not extract video ID from {video_url}")
+        return []
+
+    # Reuse existing pipeline for transcript
+    pipeline_result = youtube_pipeline.run_pipeline(video_url, channel_name=source_name)
+    if "error" in pipeline_result:
+        print(f"[ERROR] Pipeline failed: {pipeline_result['error']}")
+        return []
+
+    transcript = pipeline_result.get("transcript", "")
+    if not transcript:
+        print(f"[ERROR] No transcript available")
+        return []
+
+    # Step 2: Extract picks with LLM
+    extraction = extract_picks_from_transcript(transcript, source=source_name)
+    if extraction is None or not extraction.picks:
+        print(f"[MARKET_MOB] No picks found in video")
+        return []
+
+    print(f"[MARKET_MOB] Found {len(extraction.picks)} picks: {[p.ticker for p in extraction.picks]}")
+
+    # Step 3: Add picks to watchlist
+    watchlist = load_watchlist()
+    new_entries = picks_to_watchlist(extraction.picks)
+    watchlist.extend(new_entries)
+    save_watchlist(watchlist)
+    print(f"[MARKET_MOB] Added {len(new_entries)} entries to watchlist")
+
+    # Step 4: Analyze each pick
+    reports = []
+    for pick in extraction.picks:
+        filepath = analyze_ticker(pick.ticker, source=source_name)
+        if filepath:
+            reports.append(filepath)
+
+    return reports
+
+
+def run_daily_analysis(tickers: Optional[List[str]] = None) -> List[str]:
+    """Run daily analysis on watchlist or provided tickers.
+
+    Args:
+        tickers: Optional list of tickers to analyze (defaults to watchlist)
+
+    Returns:
+        List of saved report file paths
+    """
+    if tickers is None:
+        watchlist = load_watchlist()
+        tickers = list(set([entry["ticker"] for entry in watchlist if entry.get("status") == "active"]))
+
+    if not tickers:
+        print("[MARKET_MOB] No tickers to analyze")
+        return []
+
+    print(f"[MARKET_MOB] Running daily analysis for {len(tickers)} tickers: {tickers}")
+
+    reports = []
+    for ticker in tickers:
+        filepath = analyze_ticker(ticker, source="watchlist")
+        if filepath:
+            reports.append(filepath)
+
+    print(f"[MARKET_MOB] Generated {len(reports)} reports")
+    return reports
+
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) < 2:
+        print("Usage:")
+        print("  python market_mob.py analyze <TICKER>     # Analyze single ticker")
+        print("  python market_mob.py daily                # Analyze watchlist")
+        print("  python market_mob.py youtube <URL>        # Process YouTube video")
+        sys.exit(1)
+
+    command = sys.argv[1]
+
+    if command == "analyze" and len(sys.argv) >= 3:
+        ticker = sys.argv[2].upper()
+        analyze_ticker(ticker)
+
+    elif command == "daily":
+        run_daily_analysis()
+
+    elif command == "youtube" and len(sys.argv) >= 3:
+        url = sys.argv[2]
+        # Default source — in production, look up from config
+        process_youtube_video(url, source_name="Unknown")
+
+    else:
+        print(f"Unknown command: {command}")
+        sys.exit(1)

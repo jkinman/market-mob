@@ -6,9 +6,11 @@ import os
 import sys
 from datetime import datetime
 
-from extract_video_id import extract_video_id
-from fetch_transcript import fetch_transcript
-from extract_picks import extract_picks_llm
+from .extract_video_id import extract_video_id
+from .fetch_transcript import fetch_transcript
+
+# Note: extract_picks module was removed in favor of agents/pick_extractor/llm_extractor.py
+# Keeping pipeline focused on transcript fetch only
 
 
 def run_pipeline(video_url: str, channel_name: str = "manual") -> dict:
@@ -43,21 +45,16 @@ def run_pipeline(video_url: str, channel_name: str = "manual") -> dict:
     with open(transcript_file, 'w') as f:
         f.write(transcript)
     
-    # Step 4: Extract picks
-    result = extract_picks_llm(transcript, video_title=video_id, channel_name=channel_name)
-    result["video_id"] = video_id
-    result["url"] = video_url
-    result["transcript_file"] = transcript_file
-    result["processed_at"] = datetime.now().isoformat()
+    # Return transcript data — pick extraction is handled by agents/pick_extractor
+    result = {
+        "video_id": video_id,
+        "url": video_url,
+        "transcript": transcript,
+        "transcript_file": transcript_file,
+        "processed_at": datetime.now().isoformat(),
+    }
     
-    # Step 5: Save result
-    os.makedirs("data/picks", exist_ok=True)
-    picks_file = f"data/picks/{video_id}.json"
-    with open(picks_file, 'w') as f:
-        json.dump(result, f, indent=2)
-    
-    print(f"[PIPELINE] Saved picks to: {picks_file}")
-    print(f"[PIPELINE] Detected tickers: {result.get('detected_tickers_regex', [])}")
+    print(f"[PIPELINE] Saved transcript to: {transcript_file}")
     
     return result
 
