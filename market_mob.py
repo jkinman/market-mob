@@ -7,11 +7,17 @@ Wires together:
 3. Output (markdown report → Obsidian vault)
 """
 
+import os
 from dotenv import load_dotenv
-load_dotenv()
+
+# Load .env.local from project root (works regardless of cwd)
+_ENV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env.local")
+if os.path.exists(_ENV_PATH):
+    load_dotenv(_ENV_PATH)
+else:
+    load_dotenv()  # fallback to cwd
 
 import json
-import os
 from datetime import datetime
 from typing import Optional, List
 
