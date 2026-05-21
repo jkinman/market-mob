@@ -341,6 +341,10 @@ This is an experimental tool for research and education. AI-generated stock pred
 
 Built with minimal Python, pytest, and a lot of mocking. No frameworks until we need them.
 
+## Domain Glossary
+
+See [CONTEXT.md](https://github.com/jkinman/market-mob/blob/main/CONTEXT.md) for the shared domain language used across this project.
+
 ---
 
 ## Using Market Mob with Hermes Agent / OpenClaw
