@@ -1,0 +1,16 @@
+# Data
+yfinance>=0.2.54
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Ingestion
+youtube-transcript-api>=1.2.4
+feedparser>=6.0.12
+requests>=2.31.0
+
+# Testing
+pytest>=8.0.0
+pytest-cov>=4.1.0
+
+# Optional: local LLM
+# ollama>=0.1.0
