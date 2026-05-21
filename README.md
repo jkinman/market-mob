@@ -340,3 +340,162 @@ This is an experimental tool for research and education. AI-generated stock pred
 ---
 
 Built with minimal Python, pytest, and a lot of mocking. No frameworks until we need them.
+
+---
+
+## Using Market Mob with Hermes Agent / OpenClaw
+
+Market Mob is designed to be **discoverable and operable by AI agents**. If you're reading this as an agent, here's how to use it.
+
+### Quick Agent Commands
+
+```bash
+# Navigate to project
+cd ~/.hermes/workspace/market-mob
+
+# Source environment (required for LLM access)
+export $(grep -v '^#' .env.local | xargs)
+
+# Analyze a single stock
+python market_mob.py analyze AAPL
+
+# Analyze a sector basket
+python market_mob.py sector tech
+python market_mob.py sector mining
+python market_mob.py sector energy
+
+# Run alpha scan (volatile stocks + suspicious moves)
+python market_mob.py alpha
+
+# Run market overview (macro sweep of watchlist)
+python market_mob.py overview
+
+# Process a YouTube video for stock picks
+python market_mob.py youtube "https://youtu.be/VIDEO_ID"
+
+# Run daily watchlist analysis
+python market_mob.py daily
+
+# Display investor persona
+python market_mob.py persona
+```
+
+### Agent Discovery Protocol
+
+When operating on behalf of a user, follow this flow:
+
+**1. Check Environment**
+```bash
+# Verify .env.local exists and has LLM keys
+ls .env.local
+cat .env.local | grep -E "(LLM_PROVIDER|OPENAI_API_KEY)"
+
+# Verify tests pass
+python -m pytest tests/ -q
+```
+
+**2. Load Persona (if exists)**
+```bash
+cat config/persona.json 2>/dev/null || echo "No persona configured"
+```
+If persona exists, respect risk tolerance, avoid sectors, and mention current positions in analysis.
+
+**3. Check Watchlist**
+```bash
+cat config/watchlist.json
+```
+
+**4. Run Appropriate Analysis**
+
+| User Says | Command |
+|---|---|
+| "Analyze Tesla" | `python market_mob.py analyze TSLA` |
+| "What's hot in quantum?" | `python market_mob.py sector tech` (or add quantum sector) |
+| "Any suspicious moves today?" | `python market_mob.py alpha` |
+| "Run my daily briefing" | `python market_mob.py overview` |
+| "Check this video" | `python market_mob.py youtube "URL"` |
+
+**5. Read Generated Reports**
+
+Reports are saved to `output/obsidian/`:
+```bash
+ls -lt output/obsidian/ | head -10
+cat output/obsidian/2026-05-21--aapl.md
+```
+
+**6. Update Watchlist (if needed)**
+
+The user can paste a watchlist from Yahoo Finance, brokerages, etc. Parse tickers and write to `config/watchlist.json`:
+```json
+[
+  {"ticker": "AAPL", "source": "manual", "status": "active", "added": "2026-05-21"},
+  {"ticker": "TSLA", "source": "manual", "status": "active", "added": "2026-05-21"}
+]
+```
+
+### Key Files for Agents
+
+| File | Purpose |
+|---|---|
+| `market_mob.py` | CLI entry point — all commands go through here |
+| `config/persona.json` | Investor profile (risk, positions, preferences) |
+| `config/watchlist.json` | Active tickers to track |
+| `config/sources.json` | YouTube channels to monitor |
+| `.env.local` | API keys (never commit, gitignored) |
+| `output/obsidian/` | Generated reports (markdown with frontmatter) |
+| `analysis/sector/discovery.py` | Sector baskets (add new sectors here) |
+| `agents/analyst/llm_analyst.py` | LLM prompts (modify for different analysis styles) |
+
+### Extending Market Mob
+
+**Add a new sector:**
+```python
+# analysis/sector/discovery.py
+SECTOR_BASKETS["renewable"] = ["ENPH", "SEDG", "FSLR", "NXT", "NOVA", "RUN", "SPWR", "ARRY", "MAXN", "SHLS"]
+```
+
+**Add a new indicator:**
+```python
+# analysis/technical/indicators.py
+def atr(df: pd.DataFrame, period: int = 14):
+    """Average True Range — volatility indicator."""
+    high_low = df["High"] - df["Low"]
+    high_close = abs(df["High"] - df["Close"].shift())
+    low_close = abs(df["Low"] - df["Close"].shift())
+    tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+    df["atr"] = tr.rolling(window=period).mean()
+    return df
+```
+
+**Add a new LLM provider:**
+```python
+# agents/analyst/llm_analyst.py
+# Add to _call_llm() function
+elif provider == "anthropic":
+    import anthropic
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    # ... implement call
+```
+
+### Safety Rules for Agents
+
+1. **Never commit `.env.local`** — it contains live API keys
+2. **Never expose tokens** in chat output or logs
+3. **Respect persona risk tolerance** — don't recommend aggressive trades to conservative investors
+4. **Always label** AI-generated analysis as "not financial advice"
+5. **Test before claiming** — run `pytest tests/` after any code changes
+6. **Commit after each task** — `git add -A && git commit -m "..."`
+
+### Troubleshooting for Agents
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `Connection refused` on localhost:11434 | Defaulting to Ollama, not configured | Export vars from `.env.local` first |
+| `No tickers to analyze` | Watchlist empty | Check `config/watchlist.json` |
+| LLM returns garbage | Prompt too long or model confused | Check token count, simplify prompt |
+| yfinance fetch fails | Rate limit or invalid ticker | Retry, check ticker symbol |
+| Tests fail after changes | Breaking change to dataclass or function | Check type signatures match |
+
+---
+
+*This guide is written for AI agents operating in Hermes, OpenClaw, or similar agent frameworks. If you're a human reading this — hi, the agents are doing their job.* 🦑
