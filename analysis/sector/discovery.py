@@ -28,6 +28,10 @@ SECTOR_BASKETS: dict[str, list[str]] = {
         "CGC", "TLRY", "ACB", "CRON", "SNDL",
         "GTBIF", "TCNNF", "CURLF", "VRNOF", "MSOS",
     ],
+    "quantum": [
+        "IBM", "GOOGL", "MSFT", "IONQ", "RGTI",
+        "QBTS", "FORM", "ARQQ", "QUBT", "QSI",
+    ],
 }
 
 

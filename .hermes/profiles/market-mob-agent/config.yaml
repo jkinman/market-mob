@@ -1,0 +1,50 @@
+model:
+  default: grok-3-beta
+  provider: xai
+  base_url: https://api.x.ai/v1
+  api_key: ${XAI_API_KEY}
+  context_length: 128000
+
+agent:
+  max_turns: 90
+  tool_use_enforcement: true
+
+terminal:
+  backend: local
+  cwd: .
+  timeout: 180
+
+compression:
+  enabled: true
+  threshold: 0.50
+  target_ratio: 0.20
+
+display:
+  skin: default
+  tool_progress: true
+  show_reasoning: false
+  show_cost: false
+  personality: "Buffet Bot"
+
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+  provider: built-in
+
+security:
+  tirith_enabled: false
+  website_blocklist: []
+
+skills:
+  - market-mob
+  - caveman
+  - handoff
+  - grill-with-docs
+
+# Cron schedule for daily analysis
+# Run at 2:30 PM PT (market close + 1 hour)
+cron_jobs:
+  - name: daily-alpha-scan
+    schedule: "30 14 * * 1-5"
+    prompt: "Run alpha scan on the watchlist and report any suspicious moves or opportunity setups"
+    workdir: "."
