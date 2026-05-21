@@ -1,0 +1,22 @@
+{
+  "name": "Default Investor",
+  "risk_tolerance": "moderate",
+  "time_horizon": "medium",
+  "preferred_sectors": ["technology", "healthcare", "finance"],
+  "avoid_sectors": ["tobacco", "gambling"],
+  "current_positions": [
+    {
+      "ticker": "AAPL",
+      "shares": 100,
+      "avg_cost": 150.0
+    },
+    {
+      "ticker": "NVDA",
+      "shares": 50,
+      "avg_cost": 400.0
+    }
+  ],
+  "max_position_size_pct": 10.0,
+  "min_liquidity": 5.0,
+  "notes": "Prefer dividend growth stocks with strong balance sheets. Avoid highly speculative plays."
+}

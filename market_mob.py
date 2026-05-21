@@ -18,6 +18,7 @@ from typing import Optional, List
 from analysis.technical.fetch_prices import fetch_prices
 from analysis.technical.indicators import compute_all, summarize_latest
 from agents.analyst.llm_analyst import analyze_stock, analyze_overview, analyze_alpha, AnalysisResult
+from agents.persona.persona_loader import load_persona, Persona
 from agents.pick_extractor.llm_extractor import (
     extract_picks_from_transcript,
     picks_to_watchlist,
@@ -56,12 +57,13 @@ def save_watchlist(watchlist: List[dict], path: str = "config/watchlist.json") -
         json.dump(watchlist, f, indent=2)
 
 
-def analyze_ticker(ticker: str, source: str = "manual") -> Optional[str]:
+def analyze_ticker(ticker: str, source: str = "manual", persona: Optional[Persona] = None) -> Optional[str]:
     """Analyze a single ticker end-to-end.
 
     Args:
         ticker: Stock symbol
         source: Where the pick came from
+        persona: Optional investor persona for tailored analysis
 
     Returns:
         Path to saved report, or None if analysis fails
@@ -79,7 +81,7 @@ def analyze_ticker(ticker: str, source: str = "manual") -> Optional[str]:
     indicators_summary = summarize_latest(df)
 
     # Step 3: LLM analysis
-    analysis = analyze_stock(ticker, {}, indicators_summary)
+    analysis = analyze_stock(ticker, {}, indicators_summary, persona=persona)
     if analysis is None:
         print(f"[ERROR] LLM analysis failed for {ticker}")
         return None
@@ -96,7 +98,7 @@ def analyze_ticker(ticker: str, source: str = "manual") -> Optional[str]:
     )
 
     # Step 5: Format and save report
-    report = format_daily_report(ticker, {}, indicators_summary, analysis, source=source)
+    report = format_daily_report(ticker, {}, indicators_summary, analysis, source=source, persona=persona)
 
     # Step 5b: Append sentiment section
     try:
@@ -112,12 +114,13 @@ def analyze_ticker(ticker: str, source: str = "manual") -> Optional[str]:
     return filepath
 
 
-def process_youtube_video(video_url: str, source_name: str) -> List[str]:
+def process_youtube_video(video_url: str, source_name: str, persona: Optional[Persona] = None) -> List[str]:
     """Process a YouTube video: extract picks → analyze each → generate reports.
 
     Args:
         video_url: YouTube URL
         source_name: Channel/source name
+        persona: Optional investor persona for tailored analysis
 
     Returns:
         List of saved report file paths
@@ -159,7 +162,7 @@ def process_youtube_video(video_url: str, source_name: str) -> List[str]:
     # Step 4: Analyze each pick
     reports = []
     for pick in extraction.picks:
-        filepath = analyze_ticker(pick.ticker, source=source_name)
+        filepath = analyze_ticker(pick.ticker, source=source_name, persona=persona)
         if filepath:
             reports.append(filepath)
 
@@ -211,11 +214,12 @@ def run_sector_analysis(sector_name: str) -> Optional[str]:
     return filepath
 
 
-def run_daily_analysis(tickers: Optional[List[str]] = None) -> List[str]:
+def run_daily_analysis(tickers: Optional[List[str]] = None, persona: Optional[Persona] = None) -> List[str]:
     """Run daily analysis on watchlist or provided tickers.
 
     Args:
         tickers: Optional list of tickers to analyze (defaults to watchlist)
+        persona: Optional investor persona for tailored analysis
 
     Returns:
         List of saved report file paths
@@ -238,7 +242,7 @@ def run_daily_analysis(tickers: Optional[List[str]] = None) -> List[str]:
 
     reports = []
     for ticker in tickers:
-        filepath = analyze_ticker(ticker, source="watchlist")
+        filepath = analyze_ticker(ticker, source="watchlist", persona=persona)
         if filepath:
             reports.append(filepath)
 
@@ -272,11 +276,12 @@ def _fetch_watchlist_indicators(tickers: List[str]) -> tuple[dict, list]:
     return tickers_data, suspicious_moves
 
 
-def run_overview(tickers: Optional[List[str]] = None) -> Optional[str]:
+def run_overview(tickers: Optional[List[str]] = None, persona: Optional[Persona] = None) -> Optional[str]:
     """Run market overview analysis on watchlist.
 
     Args:
         tickers: Optional list of tickers (defaults to active watchlist)
+        persona: Optional investor persona for tailored analysis
 
     Returns:
         Path to saved report, or None if analysis fails
@@ -296,7 +301,7 @@ def run_overview(tickers: Optional[List[str]] = None) -> Optional[str]:
         print("[ERROR] Could not fetch data for any tickers")
         return None
 
-    overview = analyze_overview(tickers_data)
+    overview = analyze_overview(tickers_data, persona=persona)
     if overview is None:
         print("[ERROR] Overview analysis failed")
         return None
@@ -346,11 +351,12 @@ def run_overview(tickers: Optional[List[str]] = None) -> Optional[str]:
     return filepath
 
 
-def run_alpha(tickers: Optional[List[str]] = None) -> Optional[str]:
+def run_alpha(tickers: Optional[List[str]] = None, persona: Optional[Persona] = None) -> Optional[str]:
     """Run daily alpha scan on watchlist.
 
     Args:
         tickers: Optional list of tickers (defaults to active watchlist)
+        persona: Optional investor persona for tailored analysis
 
     Returns:
         Path to saved report, or None if analysis fails
@@ -370,7 +376,7 @@ def run_alpha(tickers: Optional[List[str]] = None) -> Optional[str]:
         print("[ERROR] Could not fetch data for any tickers")
         return None
 
-    alpha = analyze_alpha(tickers_data, suspicious_moves)
+    alpha = analyze_alpha(tickers_data, suspicious_moves, persona=persona)
     if alpha is None:
         print("[ERROR] Alpha analysis failed")
         return None
@@ -426,8 +432,44 @@ def run_alpha(tickers: Optional[List[str]] = None) -> Optional[str]:
     return filepath
 
 
+def display_persona(persona: Optional[Persona] = None) -> None:
+    """Display the current investor persona.
+
+    Args:
+        persona: Optional pre-loaded persona (loads from disk if None)
+    """
+    if persona is None:
+        persona = load_persona()
+
+    if persona is None:
+        print("[MARKET_MOB] No persona configured.")
+        print("Create config/persona.json to set up your investor profile.")
+        return
+
+    print(f"[MARKET_MOB] Investor Persona")
+    print(f"  Name:             {persona.name}")
+    print(f"  Risk Tolerance:   {persona.risk_tolerance}")
+    print(f"  Time Horizon:     {persona.time_horizon}")
+    print(f"  Preferred Sectors: {', '.join(persona.preferred_sectors) or 'None'}")
+    print(f"  Avoid Sectors:    {', '.join(persona.avoid_sectors) or 'None'}")
+    print(f"  Max Position:     {persona.max_position_size_pct}%")
+    print(f"  Min Liquidity:    ${persona.min_liquidity}M")
+    print(f"  Notes:            {persona.notes or 'None'}")
+    if persona.current_positions:
+        print(f"  Positions:")
+        for pos in persona.current_positions:
+            print(f"    - {pos.ticker}: {pos.shares} shares @ ${pos.avg_cost:.2f}")
+    else:
+        print(f"  Positions:        None")
+
+
 if __name__ == "__main__":
     import sys
+
+    # Load persona once at startup (optional — backward compatible)
+    _persona = load_persona()
+    if _persona:
+        print(f"[MARKET_MOB] Loaded persona: {_persona.name} ({_persona.risk_tolerance}, {_persona.time_horizon})")
 
     if len(sys.argv) < 2:
         print("Usage:")
@@ -437,31 +479,35 @@ if __name__ == "__main__":
         print("  python market_mob.py overview             # Market overview on watchlist")
         print("  python market_mob.py alpha                # Alpha scan on watchlist")
         print("  python market_mob.py youtube <URL>        # Process YouTube video")
+        print("  python market_mob.py persona              # Display current persona")
         sys.exit(1)
 
     command = sys.argv[1]
 
     if command == "analyze" and len(sys.argv) >= 3:
         ticker = sys.argv[2].upper()
-        analyze_ticker(ticker)
+        analyze_ticker(ticker, persona=_persona)
 
     elif command == "sector" and len(sys.argv) >= 3:
         sector = sys.argv[2].lower()
         run_sector_analysis(sector)
 
     elif command == "daily":
-        run_daily_analysis()
+        run_daily_analysis(persona=_persona)
 
     elif command == "overview":
-        run_overview()
+        run_overview(persona=_persona)
 
     elif command == "alpha":
-        run_alpha()
+        run_alpha(persona=_persona)
 
     elif command == "youtube" and len(sys.argv) >= 3:
         url = sys.argv[2]
         # Default source — in production, look up from config
-        process_youtube_video(url, source_name="Unknown")
+        process_youtube_video(url, source_name="Unknown", persona=_persona)
+
+    elif command == "persona":
+        display_persona(_persona)
 
     else:
         print(f"Unknown command: {command}")

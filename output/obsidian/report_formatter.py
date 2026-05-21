@@ -1,8 +1,10 @@
 """Format analysis results as Obsidian markdown notes."""
 
 from datetime import datetime
+from typing import Optional
 
 from agents.analyst.llm_analyst import AnalysisResult
+from agents.persona.persona_loader import Persona, format_persona_for_prompt, get_position_for_ticker
 from analysis.accuracy_tracker import AccuracyTracker
 
 
@@ -48,6 +50,7 @@ def format_daily_report(
     indicators_summary: dict,
     analysis: AnalysisResult,
     source: str = "manual",
+    persona: Optional[Persona] = None,
 ) -> str:
     """Format a single-stock analysis as an Obsidian markdown note.
 
@@ -57,11 +60,36 @@ def format_daily_report(
         indicators_summary: Indicator values
         analysis: LLM analysis result
         source: Where the pick came from (youtube, manual, etc.)
+        persona: Optional investor persona for report context
 
     Returns:
         Markdown string
     """
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    persona_section = ""
+    if persona is not None:
+        persona_lines = ["## Investor Profile", ""]
+        persona_lines.append(f"- **Name:** {persona.name}")
+        persona_lines.append(f"- **Risk Tolerance:** {persona.risk_tolerance}")
+        persona_lines.append(f"- **Time Horizon:** {persona.time_horizon}")
+        if persona.preferred_sectors:
+            persona_lines.append(f"- **Preferred Sectors:** {', '.join(persona.preferred_sectors)}")
+        if persona.avoid_sectors:
+            persona_lines.append(f"- **Avoid Sectors:** {', '.join(persona.avoid_sectors)}")
+        persona_lines.append(f"- **Max Position Size:** {persona.max_position_size_pct}%")
+        persona_lines.append(f"- **Min Liquidity:** ${persona.min_liquidity}M")
+        if persona.notes:
+            persona_lines.append(f"- **Notes:** {persona.notes}")
+
+        pos = get_position_for_ticker(persona, ticker)
+        if pos is not None:
+            persona_lines.append("")
+            persona_lines.append(f"### Current Position in {ticker}")
+            persona_lines.append(f"- **Shares:** {pos['shares']}")
+            persona_lines.append(f"- **Avg Cost:** ${pos['avg_cost']:.2f}")
+
+        persona_section = "\n".join(persona_lines) + "\n\n"
 
     report = f"""---
 date: {datetime.now().strftime("%Y-%m-%d")}
@@ -72,7 +100,7 @@ status: active
 
 # {ticker} Analysis — {now}
 
-## Price Data
+{persona_section}## Price Data
 - **Current Price**: ${indicators_summary['price']}
 - **1-Day Change**: ${indicators_summary['price_change_1d']}
 - **Volume**: {indicators_summary['volume']:,}

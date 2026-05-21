@@ -5,6 +5,12 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional, Callable
 
+from agents.persona.persona_loader import (
+    Persona,
+    format_persona_for_prompt,
+    format_position_context,
+)
+
 
 @dataclass
 class AnalysisResult:
@@ -49,18 +55,33 @@ class AlphaResult:
     raw_response: str
 
 
-def build_prompt(ticker: str, price_summary: dict, indicators_summary: dict) -> str:
+def build_prompt(
+    ticker: str,
+    price_summary: dict,
+    indicators_summary: dict,
+    persona: Optional[Persona] = None,
+) -> str:
     """Build a structured prompt for the LLM analyst.
 
     Args:
         ticker: Stock symbol
         price_summary: Dict with price data (from fetch_prices)
         indicators_summary: Dict with indicator values (from indicators.summarize_latest)
+        persona: Optional investor persona for tailored advice
 
     Returns:
         Formatted prompt string
     """
-    prompt = f"""You are a senior technical analyst at a hedge fund. Analyze the following stock data and provide a structured investment assessment.
+    persona_block = format_persona_for_prompt(persona)
+    position_block = format_position_context(persona, ticker)
+
+    persona_section = ""
+    if persona_block:
+        persona_section = f"\n{persona_block}\n"
+        if position_block:
+            persona_section += f"- {position_block}\n"
+
+    prompt = f"""You are a senior technical analyst at a hedge fund. Analyze the following stock data and provide a structured investment assessment.{persona_section}
 
 ## Stock: {ticker}
 
@@ -104,11 +125,15 @@ No markdown, no explanation outside JSON."""
     return prompt
 
 
-def build_overview_prompt(tickers_data: dict) -> str:
+def build_overview_prompt(
+    tickers_data: dict,
+    persona: Optional[Persona] = None,
+) -> str:
     """Build a market overview prompt for the LLM analyst.
 
     Args:
         tickers_data: Dict mapping ticker -> indicators summary dict
+        persona: Optional investor persona for tailored advice
 
     Returns:
         Formatted prompt string
@@ -128,7 +153,10 @@ def build_overview_prompt(tickers_data: dict) -> str:
 
     summaries_text = "\n".join(ticker_summaries)
 
-    prompt = f"""You are a senior macro strategist at a hedge fund. Provide a broad market overview based on the following watchlist data.
+    persona_block = format_persona_for_prompt(persona)
+    persona_section = f"\n{persona_block}\n" if persona_block else ""
+
+    prompt = f"""You are a senior macro strategist at a hedge fund. Provide a broad market overview based on the following watchlist data.{persona_section}
 
 ## Watchlist Summary
 {summaries_text}
@@ -158,12 +186,17 @@ No markdown, no explanation outside JSON."""
     return prompt
 
 
-def build_alpha_prompt(tickers_data: dict, suspicious_moves: list) -> str:
+def build_alpha_prompt(
+    tickers_data: dict,
+    suspicious_moves: list,
+    persona: Optional[Persona] = None,
+) -> str:
     """Build a daily alpha prompt for the LLM analyst.
 
     Args:
         tickers_data: Dict mapping ticker -> indicators summary dict
         suspicious_moves: List of SuspiciousMove-like dicts or dataclasses
+        persona: Optional investor persona for tailored advice
 
     Returns:
         Formatted prompt string
@@ -198,7 +231,10 @@ def build_alpha_prompt(tickers_data: dict, suspicious_moves: list) -> str:
             move_lines.append(line)
         moves_text = "\n".join(move_lines)
 
-    prompt = f"""You are a senior alpha hunter at a hedge fund. Find volatile stocks, suspicious moves, and opportunity setups from the following data.
+    persona_block = format_persona_for_prompt(persona)
+    persona_section = f"\n{persona_block}\n" if persona_block else ""
+
+    prompt = f"""You are a senior alpha hunter at a hedge fund. Find volatile stocks, suspicious moves, and opportunity setups from the following data.{persona_section}
 
 ## Watchlist Summary
 {summaries_text}
@@ -400,6 +436,7 @@ def analyze_stock(
     price_summary: dict,
     indicators_summary: dict,
     llm_caller: Optional[Callable[[str], str]] = None,
+    persona: Optional[Persona] = None,
 ) -> Optional[AnalysisResult]:
     """Analyze a stock using LLM.
 
@@ -408,11 +445,12 @@ def analyze_stock(
         price_summary: Price data summary
         indicators_summary: Technical indicator summary
         llm_caller: Optional custom LLM function (for testing)
+        persona: Optional investor persona for tailored advice
 
     Returns:
         AnalysisResult or None if analysis fails
     """
-    prompt = build_prompt(ticker, price_summary, indicators_summary)
+    prompt = build_prompt(ticker, price_summary, indicators_summary, persona=persona)
 
     caller = llm_caller or _default_llm_call
 
@@ -427,12 +465,14 @@ def analyze_stock(
 def analyze_overview(
     tickers_data: dict,
     llm_caller: Optional[Callable[[str], str]] = None,
+    persona: Optional[Persona] = None,
 ) -> Optional[OverviewResult]:
     """Run a market overview analysis on a watchlist using LLM.
 
     Args:
         tickers_data: Dict mapping ticker -> indicators summary dict
         llm_caller: Optional custom LLM function (for testing)
+        persona: Optional investor persona for tailored advice
 
     Returns:
         OverviewResult or None if analysis fails
@@ -441,7 +481,7 @@ def analyze_overview(
         print("[ERROR] No ticker data provided for overview")
         return None
 
-    prompt = build_overview_prompt(tickers_data)
+    prompt = build_overview_prompt(tickers_data, persona=persona)
     caller = llm_caller or _default_llm_call
 
     try:
@@ -456,6 +496,7 @@ def analyze_alpha(
     tickers_data: dict,
     suspicious_moves: list,
     llm_caller: Optional[Callable[[str], str]] = None,
+    persona: Optional[Persona] = None,
 ) -> Optional[AlphaResult]:
     """Run a daily alpha scan on a watchlist using LLM.
 
@@ -463,6 +504,7 @@ def analyze_alpha(
         tickers_data: Dict mapping ticker -> indicators summary dict
         suspicious_moves: List of SuspiciousMove-like objects or dicts
         llm_caller: Optional custom LLM function (for testing)
+        persona: Optional investor persona for tailored advice
 
     Returns:
         AlphaResult or None if analysis fails
@@ -471,7 +513,7 @@ def analyze_alpha(
         print("[ERROR] No ticker data provided for alpha scan")
         return None
 
-    prompt = build_alpha_prompt(tickers_data, suspicious_moves)
+    prompt = build_alpha_prompt(tickers_data, suspicious_moves, persona=persona)
     caller = llm_caller or _default_llm_call
 
     try:
