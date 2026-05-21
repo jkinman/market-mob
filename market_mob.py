@@ -24,6 +24,9 @@ from output.obsidian.report_formatter import format_daily_report, save_report
 from ingestion.youtube import extract_video_id
 from ingestion.youtube import pipeline as youtube_pipeline
 from analysis.accuracy_tracker import AccuracyTracker
+from analysis.sector.discovery import get_sector_tickers, list_sectors
+from analysis.sector.basket_analyzer import analyze_sector
+from analysis.sector.sector_report import generate_sector_report, save_sector_report
 
 
 def load_sources_config(path: str = "config/sources.json") -> dict:
@@ -148,6 +151,40 @@ def process_youtube_video(video_url: str, source_name: str) -> List[str]:
     return reports
 
 
+def run_sector_analysis(sector_name: str) -> Optional[str]:
+    """Analyze an entire sector end-to-end.
+
+    Args:
+        sector_name: Sector name (e.g., "mining", "tech", "energy")
+
+    Returns:
+        Path to saved report, or None if analysis fails
+    """
+    print(f"[MARKET_MOB] Analyzing sector: {sector_name}")
+
+    # Step 1: Resolve sector to tickers
+    tickers = get_sector_tickers(sector_name)
+    if tickers is None:
+        available = list_sectors()
+        print(f"[ERROR] Unknown sector '{sector_name}'. Available: {available}")
+        return None
+
+    print(f"[MARKET_MOB] Sector '{sector_name}' -> {len(tickers)} tickers: {tickers}")
+
+    # Step 2: Analyze basket
+    sector_analysis = analyze_sector(sector_name, tickers)
+    if not sector_analysis.tickers_analyzed:
+        print(f"[ERROR] No tickers could be analyzed for sector {sector_name}")
+        return None
+
+    # Step 3: Generate and save report
+    report = generate_sector_report(sector_analysis, source="sector-command")
+    filepath = save_sector_report(sector_name, report)
+
+    print(f"[MARKET_MOB] Sector report saved: {filepath}")
+    return filepath
+
+
 def run_daily_analysis(tickers: Optional[List[str]] = None) -> List[str]:
     """Run daily analysis on watchlist or provided tickers.
 
@@ -189,6 +226,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage:")
         print("  python market_mob.py analyze <TICKER>     # Analyze single ticker")
+        print("  python market_mob.py sector <SECTOR>      # Analyze sector (mining, tech, energy, etc.)")
         print("  python market_mob.py daily                # Analyze watchlist")
         print("  python market_mob.py youtube <URL>        # Process YouTube video")
         sys.exit(1)
@@ -198,6 +236,10 @@ if __name__ == "__main__":
     if command == "analyze" and len(sys.argv) >= 3:
         ticker = sys.argv[2].upper()
         analyze_ticker(ticker)
+
+    elif command == "sector" and len(sys.argv) >= 3:
+        sector = sys.argv[2].lower()
+        run_sector_analysis(sector)
 
     elif command == "daily":
         run_daily_analysis()
