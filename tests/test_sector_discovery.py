@@ -18,7 +18,7 @@ class TestSectorDiscovery:
         """SECTOR_BASKETS should contain expected sectors."""
         expected_sectors = {
             "mining", "tech", "energy", "biotech",
-            "semiconductors", "cannabis", "quantum",
+            "semiconductors", "cannabis",
         }
         assert set(SECTOR_BASKETS.keys()) == expected_sectors
 

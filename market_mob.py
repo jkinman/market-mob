@@ -31,6 +31,8 @@ from analysis.sector.discovery import get_sector_tickers, list_sectors
 from analysis.sector.basket_analyzer import analyze_sector
 from analysis.sector.sector_report import generate_sector_report, save_sector_report
 from analysis.technical.suspicious_moves import scan_tickers, SuspiciousMove
+from analysis.sentiment.sentiment_scraper import scrape_sentiment
+from analysis.sentiment.sentiment_formatter import format_sentiment_section
 
 
 def load_sources_config(path: str = "config/sources.json") -> dict:
@@ -95,6 +97,15 @@ def analyze_ticker(ticker: str, source: str = "manual") -> Optional[str]:
 
     # Step 5: Format and save report
     report = format_daily_report(ticker, {}, indicators_summary, analysis, source=source)
+
+    # Step 5b: Append sentiment section
+    try:
+        sentiment = scrape_sentiment(ticker, source="auto")
+        sentiment_md = format_sentiment_section([sentiment], title="Social Sentiment")
+        report = report.rstrip() + "\n\n" + sentiment_md + "\n"
+    except Exception as exc:
+        print(f"[WARN] Sentiment scrape failed for {ticker}: {exc}")
+
     filepath = save_report(ticker, report)
 
     print(f"[MARKET_MOB] Report saved: {filepath}")
@@ -183,6 +194,17 @@ def run_sector_analysis(sector_name: str) -> Optional[str]:
 
     # Step 3: Generate and save report
     report = generate_sector_report(sector_analysis, source="sector-command")
+
+    # Step 3b: Append sentiment for all tickers
+    try:
+        from analysis.sentiment.sentiment_scraper import scrape_sentiment_batch
+        sentiments = scrape_sentiment_batch(sector_analysis.tickers_analyzed, source="auto")
+        sentiment_results = list(sentiments.values())
+        sentiment_md = format_sentiment_section(sentiment_results, title="Social Sentiment")
+        report = report.rstrip() + "\n\n" + sentiment_md + "\n"
+    except Exception as exc:
+        print(f"[WARN] Sentiment scrape failed for sector {sector_name}: {exc}")
+
     filepath = save_sector_report(sector_name, report)
 
     print(f"[MARKET_MOB] Sector report saved: {filepath}")
