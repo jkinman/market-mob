@@ -28,22 +28,16 @@ class RawArticle:
 class NewsAggregator:
     """Aggregate news from RSS feeds and free APIs."""
 
-    # Default RSS feeds for financial news
-    DEFAULT_FEEDS = [
-        ("Reuters Markets", "https://www.reutersagency.com/feed/?taxonomy=markets&post_type=reuters-best"),
-        ("Bloomberg Markets", "https://feeds.bloomberg.com/markets/news.rss"),
-        ("CNBC Finance", "https://www.cnbc.com/id/10000664/device/rss/rss.html"),
-        ("MarketWatch Top Stories", "https://www.marketwatch.com/rss/topstories"),
-        ("Seeking Alpha Latest", "https://seekingalpha.com/market_currents.xml"),
-        ("Financial Times", "https://www.ft.com/?format=rss"),
-        ("Yahoo Finance", "https://finance.yahoo.com/news/rssindex"),
-        ("Investing.com", "https://www.investing.com/rss/news.rss"),
-        ("ZeroHedge", "https://feeds.feedburner.com/zerohedge/feed"),
-        ("Kitco Gold", "https://www.kitco.com/rss/news/gold.xml"),
-    ]
-
     def __init__(self, newsapi_key: Optional[str] = None):
-        self.newsapi_key = newsapi_key or os.getenv("NEWSAPI_KEY")
+        from config.loader import get_config
+        cfg = get_config()
+        news_cfg = cfg.news
+
+        self.rss_feeds = [
+            {"name": f.name, "url": f.url, "enabled": f.enabled}
+            for f in news_cfg.rss_feeds
+        ]
+        self.newsapi_key = newsapi_key or news_cfg.newsapi_key or os.getenv("NEWSAPI_KEY")
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "MarketMob/1.0 (Financial News Aggregator)"
@@ -110,9 +104,11 @@ class NewsAggregator:
         """Fetch from all sources and deduplicate by URL."""
         all_articles = []
 
-        # RSS feeds
-        for name, url in self.DEFAULT_FEEDS:
-            articles = self.fetch_rss_feed(name, url, max_per_feed)
+        # RSS feeds (only enabled ones)
+        for feed in self.rss_feeds:
+            if not feed.get("enabled", True):
+                continue
+            articles = self.fetch_rss_feed(feed["name"], feed["url"], max_per_feed)
             all_articles.extend(articles)
 
         # NewsAPI

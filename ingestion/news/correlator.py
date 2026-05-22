@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -27,29 +26,10 @@ class WatchlistCorrelator:
         watchlist_path: Optional[str] = None,
         portfolio_path: Optional[str] = None,
     ):
-        self.watchlist_path = watchlist_path or "config/watchlist.json"
-        self.portfolio_path = portfolio_path or "config/persona.json"
-        self.watchlist = self._load_watchlist()
-        self.portfolio = self._load_portfolio()
-
-    def _load_watchlist(self) -> list[str]:
-        """Load tickers from watchlist config."""
-        try:
-            with open(self.watchlist_path, "r") as f:
-                data = json.load(f)
-                return [item["ticker"].upper() for item in data if item.get("status") == "active"]
-        except (FileNotFoundError, json.JSONDecodeError):
-            return []
-
-    def _load_portfolio(self) -> list[str]:
-        """Load tickers from portfolio/persona config."""
-        try:
-            with open(self.portfolio_path, "r") as f:
-                data = json.load(f)
-                positions = data.get("current_positions", [])
-                return [pos["ticker"].upper() for pos in positions]
-        except (FileNotFoundError, json.JSONDecodeError, KeyError):
-            return []
+        from config.loader import get_config
+        cfg = get_config()
+        self.watchlist = cfg.get_active_watchlist_tickers()
+        self.portfolio = cfg.get_portfolio_tickers()
 
     def correlate(self, insights: list[DistilledInsight]) -> list[CorrelatedInsight]:
         """Cross-reference insights against watchlist and portfolio."""

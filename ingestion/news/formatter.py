@@ -12,7 +12,9 @@ class MobIntelFormatter:
     """Format correlated insights into the Mob Intel briefing."""
 
     def __init__(self, timezone_str: str = "America/Vancouver"):
-        self.timezone_str = timezone_str
+        from config.loader import get_config
+        cfg = get_config()
+        self.timezone_str = cfg.settings.timezone
 
     def _now(self) -> str:
         """Get current timestamp in user's timezone."""

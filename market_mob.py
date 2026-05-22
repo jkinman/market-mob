@@ -55,18 +55,18 @@ def load_sources_config(path: str = "config/sources.json") -> dict:
 
 
 def load_watchlist(path: str = "config/watchlist.json") -> List[dict]:
-    """Load active watchlist."""
-    if not os.path.exists(path):
-        return []
-    with open(path, "r") as f:
-        return json.load(f)
+    """Load active watchlist from central config."""
+    from config.loader import get_config
+    cfg = get_config()
+    return [
+        {"ticker": w.ticker, "added_date": w.added_date, "source": w.source, "status": w.status, "notes": w.notes}
+        for w in cfg.watchlist
+    ]
 
 
 def save_watchlist(watchlist: List[dict], path: str = "config/watchlist.json") -> None:
-    """Save watchlist to disk."""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(watchlist, f, indent=2)
+    """Save watchlist to central config (deprecated — config auto-saves)."""
+    pass
 
 
 def analyze_ticker(ticker: str, source: str = "manual", persona: Optional[Persona] = None) -> Optional[str]:
@@ -204,8 +204,13 @@ def process_youtube_video(video_url: str, source_name: str, persona: Optional[Pe
     # Step 3: Add picks to watchlist
     watchlist = load_watchlist()
     new_entries = picks_to_watchlist(extraction.picks)
-    watchlist.extend(new_entries)
-    save_watchlist(watchlist)
+    for entry in new_entries:
+        from config.loader import get_config
+        get_config().add_to_watchlist(
+            ticker=entry["ticker"],
+            source=entry.get("source", "youtube"),
+            notes=entry.get("notes", ""),
+        )
     print(f"[MARKET_MOB] Added {len(new_entries)} entries to watchlist")
 
     # Step 4: Analyze each pick
@@ -338,8 +343,8 @@ def run_daily_analysis(tickers: Optional[List[str]] = None, persona: Optional[Pe
         List of saved report file paths
     """
     if tickers is None:
-        watchlist = load_watchlist()
-        tickers = list(set([entry["ticker"] for entry in watchlist if entry.get("status") == "active"]))
+        from config.loader import get_config
+        tickers = get_config().get_active_watchlist_tickers()
 
     if not tickers:
         print("[MARKET_MOB] No tickers to analyze")
@@ -400,8 +405,8 @@ def run_overview(tickers: Optional[List[str]] = None, persona: Optional[Persona]
         Path to saved report, or None if analysis fails
     """
     if tickers is None:
-        watchlist = load_watchlist()
-        tickers = list(set([entry["ticker"] for entry in watchlist if entry.get("status") == "active"]))
+        from config.loader import get_config
+        tickers = get_config().get_active_watchlist_tickers()
 
     if not tickers:
         print("[MARKET_MOB] No tickers to analyze")
@@ -475,8 +480,8 @@ def run_alpha(tickers: Optional[List[str]] = None, persona: Optional[Persona] = 
         Path to saved report, or None if analysis fails
     """
     if tickers is None:
-        watchlist = load_watchlist()
-        tickers = list(set([entry["ticker"] for entry in watchlist if entry.get("status") == "active"]))
+        from config.loader import get_config
+        tickers = get_config().get_active_watchlist_tickers()
 
     if not tickers:
         print("[MARKET_MOB] No tickers to analyze")

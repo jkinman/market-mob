@@ -3,7 +3,6 @@
 import pytest
 
 from analysis.sector.discovery import (
-    SECTOR_BASKETS,
     get_sector_tickers,
     list_sectors,
     add_sector,
@@ -19,8 +18,9 @@ class TestSectorDiscovery:
         expected_sectors = {
             "mining", "tech", "energy", "biotech",
             "semiconductors", "cannabis", "quantum",
+            "precious_metals", "copper", "uranium",
         }
-        assert set(SECTOR_BASKETS.keys()) == expected_sectors
+        assert set(list_sectors()) == expected_sectors
 
     def test_mining_tickers(self):
         """Mining sector should have expected tickers."""

@@ -1,0 +1,375 @@
+{
+  "version": "1.0",
+  "sectors": {
+    "mining": {
+      "tickers": [
+        "GOLD",
+        "NEM",
+        "FNV",
+        "WPM",
+        "AEM",
+        "KL",
+        "NGD",
+        "AGI",
+        "PAAS",
+        "SSRM"
+      ],
+      "description": "Gold and silver mining companies"
+    },
+    "tech": {
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "META",
+        "NVDA",
+        "AMD",
+        "CRM",
+        "ADBE",
+        "INTC",
+        "ORCL"
+      ],
+      "description": "Large cap technology companies"
+    },
+    "energy": {
+      "tickers": [
+        "XOM",
+        "CVX",
+        "COP",
+        "EOG",
+        "MPC",
+        "PSX",
+        "VLO",
+        "OXY",
+        "DVN",
+        "MRO"
+      ],
+      "description": "Oil and gas exploration and production"
+    },
+    "biotech": {
+      "tickers": [
+        "BIIB",
+        "GILD",
+        "AMGN",
+        "REGN",
+        "VRTX",
+        "MRNA",
+        "BNTX",
+        "SGEN",
+        "ALNY",
+        "INCY"
+      ],
+      "description": "Biotechnology and pharmaceutical development"
+    },
+    "semiconductors": {
+      "tickers": [
+        "NVDA",
+        "AMD",
+        "INTC",
+        "QCOM",
+        "AVGO",
+        "MU",
+        "LRCX",
+        "KLAC",
+        "AMAT",
+        "TSM"
+      ],
+      "description": "Semiconductor design and manufacturing"
+    },
+    "cannabis": {
+      "tickers": [
+        "CGC",
+        "TLRY",
+        "ACB",
+        "CRON",
+        "SNDL",
+        "GTBIF",
+        "TCNNF",
+        "CURLF",
+        "VRNOF",
+        "MSOS"
+      ],
+      "description": "Cannabis producers and retailers"
+    },
+    "quantum": {
+      "tickers": [
+        "IBM",
+        "GOOGL",
+        "MSFT",
+        "IONQ",
+        "RGTI",
+        "QBTS",
+        "FORM",
+        "ARQQ",
+        "QUBT",
+        "QSI"
+      ],
+      "description": "Quantum computing hardware and software"
+    },
+    "precious_metals": {
+      "tickers": [
+        "GLD",
+        "SLV",
+        "GDX",
+        "GDXJ",
+        "SIL",
+        "NUGT",
+        "DUST",
+        "PAAS",
+        "WPM",
+        "FNV"
+      ],
+      "description": "Gold, silver, and precious metals miners and ETFs"
+    },
+    "copper": {
+      "tickers": [
+        "FCX",
+        "SCCO",
+        "TECK",
+        "BHP",
+        "RIO",
+        "VALE",
+        "GLNCY",
+        "ANTO",
+        "COPX",
+        "HG=F"
+      ],
+      "description": "Copper miners and related commodities"
+    },
+    "uranium": {
+      "tickers": [
+        "CCJ",
+        "URA",
+        "UUUU",
+        "DNN",
+        "URG",
+        "LEU",
+        "BWXT",
+        "NL",
+        "UROY",
+        "HURA"
+      ],
+      "description": "Uranium mining and nuclear energy"
+    }
+  },
+  "watchlist": [
+    {
+      "ticker": "XOM",
+      "added_date": "2025-01-15",
+      "source": "manual",
+      "status": "active",
+      "notes": "Energy dividend play"
+    },
+    {
+      "ticker": "MSTR",
+      "added_date": "2025-01-15",
+      "source": "manual",
+      "status": "active",
+      "notes": "Bitcoin proxy"
+    },
+    {
+      "ticker": "TSLA",
+      "added_date": "2025-01-15",
+      "source": "manual",
+      "status": "active",
+      "notes": "EV/energy transition"
+    },
+    {
+      "ticker": "QBTS",
+      "added_date": "2025-03-20",
+      "source": "youtube",
+      "status": "active",
+      "notes": "Quantum computing"
+    },
+    {
+      "ticker": "RGTI",
+      "added_date": "2025-03-20",
+      "source": "youtube",
+      "status": "active",
+      "notes": "Quantum computing"
+    },
+    {
+      "ticker": "IONQ",
+      "added_date": "2025-03-20",
+      "source": "youtube",
+      "status": "active",
+      "notes": "Quantum computing"
+    },
+    {
+      "ticker": "HURA",
+      "added_date": "2026-05-21",
+      "source": "portfolio",
+      "status": "active",
+      "notes": "TFSA holding - Uranium ETF"
+    },
+    {
+      "ticker": "SHOP",
+      "added_date": "2026-05-21",
+      "source": "portfolio",
+      "status": "active",
+      "notes": "TFSA holding - Shopify"
+    },
+    {
+      "ticker": "VUN",
+      "added_date": "2026-05-21",
+      "source": "portfolio",
+      "status": "active",
+      "notes": "TFSA holding - US Total Market ETF"
+    },
+    {
+      "ticker": "GBTC",
+      "added_date": "2026-05-21",
+      "source": "portfolio",
+      "status": "active",
+      "notes": "TFSA holding - Bitcoin Trust"
+    },
+    {
+      "ticker": "NVDA",
+      "added_date": "2026-05-21",
+      "source": "portfolio",
+      "status": "active",
+      "notes": "TFSA holding - NVIDIA"
+    }
+  ],
+  "portfolio": {
+    "holdings": [
+      {
+        "ticker": "XOM",
+        "shares": 10,
+        "avg_cost": 115.5,
+        "account": "TFSA"
+      },
+      {
+        "ticker": "MSTR",
+        "shares": 10,
+        "avg_cost": 185.0,
+        "account": "TFSA"
+      },
+      {
+        "ticker": "TSLA",
+        "shares": 1,
+        "avg_cost": 320.0,
+        "account": "TFSA"
+      },
+      {
+        "ticker": "HURA",
+        "shares": 3,
+        "avg_cost": 61.98,
+        "account": "TFSA"
+      },
+      {
+        "ticker": "SHOP",
+        "shares": 2,
+        "avg_cost": 164.5,
+        "account": "TFSA"
+      },
+      {
+        "ticker": "VUN",
+        "shares": 5,
+        "avg_cost": 130.68,
+        "account": "TFSA"
+      },
+      {
+        "ticker": "GBTC",
+        "shares": 35,
+        "avg_cost": 88.0,
+        "account": "TFSA"
+      },
+      {
+        "ticker": "NVDA",
+        "shares": 4,
+        "avg_cost": 180.0,
+        "account": "TFSA"
+      }
+    ],
+    "cash_cad": 0,
+    "physical_gold_oz": 0,
+    "physical_silver_oz": 0
+  },
+  "persona": {
+    "name": "Joel",
+    "risk_tolerance": "moderate_aggressive",
+    "time_horizon": "medium_long",
+    "preferred_sectors": [
+      "technology",
+      "energy",
+      "precious_metals",
+      "uranium",
+      "quantum"
+    ],
+    "avoid_sectors": [
+      "tobacco",
+      "gambling",
+      "defense"
+    ],
+    "max_position_size_pct": 15.0,
+    "min_liquidity": 5.0,
+    "notes": "Value-oriented but open to speculative themes (quantum, uranium, crypto). Holds physical gold/silver. Tracks macro themes like de-dollarization and central bank gold buying."
+  },
+  "news_sources": {
+    "rss_feeds": [
+      {
+        "name": "Bloomberg Markets",
+        "url": "https://feeds.bloomberg.com/markets/news.rss",
+        "enabled": true
+      },
+      {
+        "name": "CNBC Finance",
+        "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+        "enabled": true
+      },
+      {
+        "name": "MarketWatch",
+        "url": "https://www.marketwatch.com/rss/topstories",
+        "enabled": true
+      },
+      {
+        "name": "Seeking Alpha",
+        "url": "https://seekingalpha.com/market_currents.xml",
+        "enabled": true
+      },
+      {
+        "name": "Financial Times",
+        "url": "https://www.ft.com/?format=rss",
+        "enabled": true
+      },
+      {
+        "name": "Yahoo Finance",
+        "url": "https://finance.yahoo.com/news/rssindex",
+        "enabled": true
+      },
+      {
+        "name": "Investing.com",
+        "url": "https://www.investing.com/rss/news.rss",
+        "enabled": true
+      },
+      {
+        "name": "ZeroHedge",
+        "url": "https://feeds.feedburner.com/zerohedge/feed",
+        "enabled": true
+      },
+      {
+        "name": "Reuters Markets",
+        "url": "https://reutersagency.com/feed/?taxonomy=markets&post_type=reuters-best",
+        "enabled": false
+      },
+      {
+        "name": "Kitco Gold",
+        "url": "https://www.kitco.com/rss/news/gold.xml",
+        "enabled": false
+      }
+    ],
+    "newsapi_key": "",
+    "newsapi_enabled": false
+  },
+  "settings": {
+    "timezone": "America/Vancouver",
+    "market_open": "06:30",
+    "market_close": "13:00",
+    "daily_briefing_time": "07:00",
+    "mob_intel_enabled": true,
+    "mob_intel_schedule": "0 7 * * *",
+    "output_dir": "output/obsidian",
+    "data_dir": "data"
+  }
+}
