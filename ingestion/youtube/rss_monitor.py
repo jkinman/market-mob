@@ -1,41 +1,35 @@
 #!/usr/bin/env python3
-"""RSS-based YouTube channel monitor.
+"""YouTube channel monitor — scrapes channel pages for new videos.
 
-Polls YouTube channel RSS feeds hourly for new videos.
+Replaces broken RSS feed approach with direct page scraping.
 Tracks seen videos to avoid duplicates.
 """
 
+from __future__ import annotations
+
 import json
 import os
-import sys
+import re
 from datetime import datetime
 from typing import List, Optional
 
-import feedparser
 import requests
 
 
-def get_channel_rss_url(channel_id: str) -> str:
-    """Build RSS feed URL for a YouTube channel."""
-    return f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-
-
 def get_channel_id_from_url(channel_url: str) -> Optional[str]:
-    """Extract channel ID from various YouTube URL formats.
+    """Extract or resolve channel ID from various YouTube URL formats.
     
     Handles:
     - youtube.com/channel/UC...
     - youtube.com/@handle
     - youtube.com/c/name
     """
-    import re
-    
     # Direct channel ID
     match = re.search(r'channel/([A-Za-z0-9_-]+)', channel_url)
     if match:
         return match.group(1)
     
-    # @handle format — need to resolve
+    # @handle format — resolve via page scrape
     match = re.search(r'@([A-Za-z0-9_-]+)', channel_url)
     if match:
         handle = match.group(1)
@@ -44,20 +38,21 @@ def get_channel_id_from_url(channel_url: str) -> Optional[str]:
     # /c/ format
     match = re.search(r'/c/([A-Za-z0-9_-]+)', channel_url)
     if match:
-        # Would need API or page scrape to resolve
-        return None
+        return _resolve_handle_to_channel_id(match.group(1))
     
     return None
 
 
 def _resolve_handle_to_channel_id(handle: str) -> Optional[str]:
-    """Resolve @handle to channel ID via YouTube page."""
+    """Resolve @handle to channel ID via YouTube page scrape."""
     try:
         url = f"https://www.youtube.com/@{handle}"
-        response = requests.get(url, timeout=10)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
         
         # Look for channel ID in page content
-        import re
         match = re.search(r'"channelId":"([A-Za-z0-9_-]+)"', response.text)
         if match:
             return match.group(1)
@@ -74,7 +69,7 @@ def _resolve_handle_to_channel_id(handle: str) -> Optional[str]:
 
 
 def fetch_channel_videos(channel_id: str, max_results: int = 5) -> List[dict]:
-    """Fetch recent videos from channel RSS feed.
+    """Fetch recent videos from channel page scrape.
     
     Args:
         channel_id: YouTube channel ID
@@ -83,26 +78,55 @@ def fetch_channel_videos(channel_id: str, max_results: int = 5) -> List[dict]:
     Returns:
         List of video dicts with id, title, published, url
     """
-    rss_url = get_channel_rss_url(channel_id)
+    url = f"https://www.youtube.com/channel/{channel_id}/videos"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
     
     try:
-        feed = feedparser.parse(rss_url)
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
         
+        # Extract ytInitialData JSON
+        match = re.search(r'var ytInitialData = ({.+?});', response.text)
+        if not match:
+            print(f"[WARN] Could not find ytInitialData for channel {channel_id}")
+            return []
+        
+        data = json.loads(match.group(1))
+        
+        # Navigate to video contents
         videos = []
-        for entry in feed.entries[:max_results]:
-            video = {
-                "id": entry.get("yt_videoid", ""),
-                "title": entry.get("title", ""),
-                "published": entry.get("published", ""),
-                "url": entry.get("link", ""),
-                "author": entry.get("author", ""),
-            }
-            videos.append(video)
+        contents = data.get('contents', {}).get('twoColumnBrowseResultsRenderer', {}).get('tabs', [])
+        
+        for tab in contents:
+            if tab.get('tabRenderer', {}).get('selected'):
+                items = tab.get('tabRenderer', {}).get('content', {}).get('richGridRenderer', {}).get('contents', [])
+                
+                for item in items[:max_results]:
+                    lockup = item.get('richItemRenderer', {}).get('content', {}).get('lockupViewModel', {})
+                    if not lockup:
+                        continue
+                    
+                    content_id = lockup.get('contentId', '')
+                    metadata = lockup.get('metadata', {}).get('lockupMetadataViewModel', {})
+                    title = metadata.get('title', {}).get('content', '')
+                    
+                    if content_id and title:
+                        videos.append({
+                            "id": content_id,
+                            "title": title,
+                            "published": "",  # Not easily available in new layout
+                            "url": f"https://youtube.com/watch?v={content_id}",
+                            "author": "",
+                        })
+                
+                break  # Found the videos tab
         
         return videos
         
     except Exception as e:
-        print(f"[ERROR] Failed to fetch RSS for {channel_id}: {e}")
+        print(f"[ERROR] Failed to fetch videos for {channel_id}: {e}")
         return []
 
 
@@ -141,8 +165,13 @@ def check_channels_for_new_videos(
     for channel in channels:
         channel_id = channel.get("channel_id")
         if not channel_id:
-            print(f"[WARN] No channel ID for {channel.get('name', 'unknown')}")
-            continue
+            # Try to resolve from URL
+            channel_id = get_channel_id_from_url(channel.get("url", ""))
+            if channel_id:
+                channel["channel_id"] = channel_id
+            else:
+                print(f"[WARN] No channel ID for {channel.get('name', 'unknown')}")
+                continue
         
         videos = fetch_channel_videos(channel_id)
         

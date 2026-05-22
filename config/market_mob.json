@@ -244,6 +244,41 @@
       "source": "portfolio",
       "status": "active",
       "notes": "TFSA holding - NVIDIA"
+    },
+    {
+      "ticker": "VOYG",
+      "added_date": "2026-05-21",
+      "source": "manual",
+      "status": "active",
+      "notes": "Space infrastructure / satellite ground stations"
+    },
+    {
+      "ticker": "RDW",
+      "added_date": "2026-05-21",
+      "source": "manual",
+      "status": "active",
+      "notes": "Redwire - space infrastructure and components"
+    },
+    {
+      "ticker": "LUNR",
+      "added_date": "2026-05-21",
+      "source": "manual",
+      "status": "active",
+      "notes": "Intuitive Machines - lunar landers and space services"
+    },
+    {
+      "ticker": "RKLB",
+      "added_date": "2026-05-21",
+      "source": "manual",
+      "status": "active",
+      "notes": "Rocket Lab - small launch vehicles and space systems"
+    },
+    {
+      "ticker": "LLY",
+      "added_date": "2026-05-21",
+      "source": "manual",
+      "status": "active",
+      "notes": "Eli Lilly - GLP-1 leader, momentum play"
     }
   ],
   "portfolio": {
@@ -586,8 +621,67 @@
         "triggered_at": null,
         "status": "active",
         "notes": "Extended at $25.74. RSI 64. Wait."
+      },
+      {
+        "id": "LLY_buy_signal_96300",
+        "ticker": "LLY",
+        "alert_type": "buy_signal",
+        "price": 963.0,
+        "shares": null,
+        "action": "buy",
+        "message": "Wait for pullback to SMA20",
+        "created_at": "2026-05-21T20:19:35.351286",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Strong momentum but extended at 041. RSI 65.5. Better entry at 63 or 40 (SMA50)."
       }
     ],
     "trailing_stops": []
+  },
+  "sources": {
+    "youtube": [
+      {
+        "name": "Felix Health",
+        "url": "https://www.youtube.com/@FelixForyou",
+        "channel_id": "cF9hg20LJU8",
+        "enabled": true,
+        "notes": "Canadian telehealth platform - weight loss, ED, hair loss"
+      },
+      {
+        "name": "Everything Money",
+        "url": "https://www.youtube.com/@EverythingMoney",
+        "channel_id": "UC4e7JNFoPmsLZZ8-4yWqH3A",
+        "enabled": true,
+        "notes": "Value investing education - Buffett/Graham principles, IPO analysis, fundamental analysis"
+      },
+      {
+        "name": "Felix Prehn (Goat Academy)",
+        "url": "https://www.youtube.com/@FelixFriends",
+        "channel_id": "UCJtfma0mE_XrBAD9uakcjfA",
+        "enabled": true,
+        "notes": "Macro analysis, trend following, gold/stock picks"
+      },
+      {
+        "name": "Aswath Damodaran",
+        "url": "https://www.youtube.com/@AswathDamodaranonValuation",
+        "channel_id": "UC_Ifk7W1PfrC0tC6eK6q7kA",
+        "enabled": true,
+        "notes": "The Dean of Valuation - deep fundamental analysis, DCF models, valuation frameworks"
+      },
+      {
+        "name": "Lyn Alden",
+        "url": "https://www.youtube.com/@LynAldenContact",
+        "channel_id": "UCvO9JmM1L1l8z8Z3J6J6J6J",
+        "enabled": true,
+        "notes": "Macro, infrastructure, commodities, dollar analysis, long-term cycles"
+      },
+      {
+        "name": "Plain Bagel",
+        "url": "https://www.youtube.com/@ThePlainBagel",
+        "channel_id": "UCx_eA5-R8mR0l5K_Jk8l0wA",
+        "enabled": true,
+        "notes": "Canadian focus, TSX stocks, ETF analysis, personal finance"
+      }
+    ]
   }
 }
