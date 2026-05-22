@@ -1,7 +1,86 @@
 [
-  {"ticker": "QBTS", "source": "yahoo-watchlist", "status": "active", "added": "2026-05-21"},
-  {"ticker": "RGTI", "source": "yahoo-watchlist", "status": "active", "added": "2026-05-21"},
-  {"ticker": "XOM", "source": "yahoo-watchlist", "status": "active", "added": "2026-05-21"},
-  {"ticker": "PLTR", "source": "yahoo-watchlist", "status": "active", "added": "2026-05-21"},
-  {"ticker": "TSLA", "source": "yahoo-watchlist", "status": "active", "added": "2026-05-21"}
+  {
+    "ticker": "QBTS",
+    "source": "yahoo-watchlist",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "RGTI",
+    "source": "yahoo-watchlist",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "XOM",
+    "source": "yahoo-watchlist",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "PLTR",
+    "source": "yahoo-watchlist",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "TSLA",
+    "source": "yahoo-watchlist",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "BN",
+    "source": "portfolio",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "MSTR",
+    "source": "portfolio",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "COST",
+    "source": "portfolio",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "VUN.TO",
+    "source": "portfolio",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "HURA",
+    "source": "tfsa-portfolio",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "SHOP",
+    "source": "tfsa-portfolio",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "VUN",
+    "source": "tfsa-portfolio",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "GBTC",
+    "source": "tfsa-portfolio",
+    "status": "active",
+    "added": "2026-05-21"
+  },
+  {
+    "ticker": "NVDA",
+    "source": "tfsa-portfolio",
+    "status": "active",
+    "added": "2026-05-21"
+  }
 ]

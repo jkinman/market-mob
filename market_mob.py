@@ -593,6 +593,22 @@ def display_persona(persona: Optional[Persona] = None) -> None:
         print(f"  Positions:        None")
 
 
+def run_mob_intel(output_format: str = "full") -> str:
+    """Run the Mob Intel news scanner pipeline.
+
+    Args:
+        output_format: "full" or "compact"
+
+    Returns:
+        The formatted briefing string
+    """
+    from ingestion.news.pipeline import MobIntelPipeline
+
+    pipeline = MobIntelPipeline()
+    briefing = pipeline.run(output_format=output_format)
+    return briefing
+
+
 if __name__ == "__main__":
     import sys
 
@@ -608,6 +624,7 @@ if __name__ == "__main__":
         print("  python market_mob.py daily                # Analyze watchlist")
         print("  python market_mob.py overview             # Market overview on watchlist")
         print("  python market_mob.py alpha                # Alpha scan on watchlist")
+        print("  python market_mob.py intel                # Mob Intel news briefing")
         print("  python market_mob.py youtube <URL>        # Process YouTube video")
         print("  python market_mob.py persona              # Display current persona")
         sys.exit(1)
@@ -630,6 +647,10 @@ if __name__ == "__main__":
 
     elif command == "alpha":
         run_alpha(persona=_persona)
+
+    elif command == "intel":
+        briefing = run_mob_intel(output_format="full")
+        print(briefing)
 
     elif command == "youtube" and len(sys.argv) >= 3:
         url = sys.argv[2]
