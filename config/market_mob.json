@@ -150,6 +150,21 @@
         "HURA"
       ],
       "description": "Uranium mining and nuclear energy"
+    },
+    "defense": {
+      "tickers": [
+        "LMT",
+        "RTX",
+        "NOC",
+        "GD",
+        "BA",
+        "HII",
+        "TDG",
+        "AXON",
+        "KTOS",
+        "CW"
+      ],
+      "description": "Aerospace and defense contractors, military technology, and homeland security"
     }
   },
   "watchlist": [
@@ -371,5 +386,208 @@
     "mob_intel_schedule": "0 7 * * *",
     "output_dir": "output/obsidian",
     "data_dir": "data"
+  },
+  "alerts": {
+    "price_targets": [
+      {
+        "id": "TSLA_price_target_45500",
+        "ticker": "TSLA",
+        "alert_type": "price_target",
+        "price": 455.0,
+        "shares": 0.5,
+        "action": "trim",
+        "message": "Trim half at upper BB",
+        "created_at": "2026-05-21T18:08:08.183936",
+        "triggered_at": null,
+        "status": "active",
+        "notes": ""
+      },
+      {
+        "id": "SHOP_stop_loss_8800",
+        "ticker": "SHOP",
+        "alert_type": "stop_loss",
+        "price": 88.0,
+        "shares": 2,
+        "action": "sell",
+        "message": "Lower BB breakdown",
+        "created_at": "2026-05-21T18:08:08.188145",
+        "triggered_at": null,
+        "status": "active",
+        "notes": ""
+      },
+      {
+        "id": "NVDA_price_target_23500",
+        "ticker": "NVDA",
+        "alert_type": "price_target",
+        "price": 235.0,
+        "shares": 2,
+        "action": "trim",
+        "message": "Trim 50% at upper BB",
+        "created_at": "2026-05-21T18:09:35.635449",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "RSI 57, MACD flat. Take profits before momentum fades."
+      },
+      {
+        "id": "NVDA_stop_loss_19300",
+        "ticker": "NVDA",
+        "alert_type": "stop_loss",
+        "price": 193.0,
+        "shares": 4,
+        "action": "sell",
+        "message": "Hard stop at lower BB",
+        "created_at": "2026-05-21T18:09:35.636410",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Break below lower Bollinger = trend reversal. Exit full position."
+      },
+      {
+        "id": "TSLA_price_target_45500",
+        "ticker": "TSLA",
+        "alert_type": "price_target",
+        "price": 455.0,
+        "shares": 0.5,
+        "action": "trim",
+        "message": "Trim half at upper BB",
+        "created_at": "2026-05-21T18:09:35.637387",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Up 31% from cost. Don't give back gains."
+      },
+      {
+        "id": "TSLA_stop_loss_38700",
+        "ticker": "TSLA",
+        "alert_type": "stop_loss",
+        "price": 387.0,
+        "shares": 1,
+        "action": "sell",
+        "message": "Full exit below SMA50",
+        "created_at": "2026-05-21T18:09:35.638384",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Momentum name. SMA50 break = trend change."
+      },
+      {
+        "id": "XOM_stop_loss_14200",
+        "ticker": "XOM",
+        "alert_type": "stop_loss",
+        "price": 142.0,
+        "shares": 10,
+        "action": "sell",
+        "message": "Stop at lower BB",
+        "created_at": "2026-05-21T18:09:35.639362",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Energy dividend play. Only exit on major breakdown."
+      },
+      {
+        "id": "MSTR_stop_loss_15000",
+        "ticker": "MSTR",
+        "alert_type": "stop_loss",
+        "price": 150.0,
+        "shares": 10,
+        "action": "sell",
+        "message": "Hard stop at SMA50",
+        "created_at": "2026-05-21T18:09:35.640357",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Bitcoin proxy. If BTC breaks down, MSTR accelerates lower."
+      },
+      {
+        "id": "MSTR_price_target_17600",
+        "ticker": "MSTR",
+        "alert_type": "price_target",
+        "price": 176.0,
+        "shares": null,
+        "action": "notify",
+        "message": "Reclaimed SMA20 \u2014 trend intact",
+        "created_at": "2026-05-21T18:09:35.641376",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "If hits this, cancel stop and raise to breakeven $185."
+      },
+      {
+        "id": "GBTC_stop_loss_5500",
+        "ticker": "GBTC",
+        "alert_type": "stop_loss",
+        "price": 55.0,
+        "shares": 35,
+        "action": "sell",
+        "message": "Hard stop \u2014 dead position until BTC moves",
+        "created_at": "2026-05-21T18:09:35.642413",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Consider tax-loss harvesting if stopped."
+      },
+      {
+        "id": "HURA_stop_loss_208",
+        "ticker": "HURA",
+        "alert_type": "stop_loss",
+        "price": 2.08,
+        "shares": 3,
+        "action": "sell",
+        "message": "Stop at lower BB",
+        "created_at": "2026-05-21T18:09:35.643447",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Long-term commodity play. Only exit on structural breakdown."
+      },
+      {
+        "id": "SHOP_stop_loss_8800",
+        "ticker": "SHOP",
+        "alert_type": "stop_loss",
+        "price": 88.0,
+        "shares": 2,
+        "action": "sell",
+        "message": "Lower BB breakdown",
+        "created_at": "2026-05-21T18:09:35.644540",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "You already queued the sale. This is backup."
+      }
+    ],
+    "stop_losses": [],
+    "buy_signals": [
+      {
+        "id": "RGTI_buy_signal_1800",
+        "ticker": "RGTI",
+        "alert_type": "buy_signal",
+        "price": 18.0,
+        "shares": null,
+        "action": "buy",
+        "message": "Wait for pullback to SMA20",
+        "created_at": "2026-05-21T18:09:35.645727",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Currently extended at $22. RSI 63. Don't chase."
+      },
+      {
+        "id": "IONQ_buy_signal_4960",
+        "ticker": "IONQ",
+        "alert_type": "buy_signal",
+        "price": 49.6,
+        "shares": null,
+        "action": "buy",
+        "message": "Wait for pullback to SMA20",
+        "created_at": "2026-05-21T18:09:35.647085",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Extended at $58.89. RSI 65. Patience."
+      },
+      {
+        "id": "QBTS_buy_signal_2090",
+        "ticker": "QBTS",
+        "alert_type": "buy_signal",
+        "price": 20.9,
+        "shares": null,
+        "action": "buy",
+        "message": "Wait for pullback to SMA20",
+        "created_at": "2026-05-21T18:09:35.648390",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Extended at $25.74. RSI 64. Wait."
+      }
+    ],
+    "trailing_stops": []
   }
 }
