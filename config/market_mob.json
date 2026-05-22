@@ -279,6 +279,55 @@
       "source": "manual",
       "status": "active",
       "notes": "Eli Lilly - GLP-1 leader, momentum play"
+    },
+    {
+      "ticker": "XAR",
+      "added_date": "2026-05-21",
+      "source": "youtube_felix_prehn",
+      "status": "active",
+      "notes": "Defense ETF - equal weight, US focused"
+    },
+    {
+      "ticker": "AXON",
+      "added_date": "2026-05-21",
+      "source": "youtube_felix_prehn",
+      "status": "active",
+      "notes": "Police body cams + Dedrone counter-drone acquisition"
+    },
+    {
+      "ticker": "NOC",
+      "added_date": "2026-05-21",
+      "source": "youtube_felix_prehn",
+      "status": "active",
+      "notes": "Northrop Grumman - B-21 bombers, oversold"
+    },
+    {
+      "ticker": "LHX",
+      "added_date": "2026-05-21",
+      "source": "youtube_felix_prehn",
+      "status": "active",
+      "notes": "L3Harris - electronic warfare, wait for 20"
+    },
+    {
+      "ticker": "KTOS",
+      "added_date": "2026-05-21",
+      "source": "youtube_felix_prehn",
+      "status": "active",
+      "notes": "Kratos - unmanned systems, B backlog, down 60%"
+    },
+    {
+      "ticker": "ESLT",
+      "added_date": "2026-05-21",
+      "source": "youtube_felix_prehn",
+      "status": "active",
+      "notes": "Elbit Systems - Israeli, combat validated"
+    },
+    {
+      "ticker": "RCAT",
+      "added_date": "2026-05-21",
+      "source": "youtube_felix_prehn",
+      "status": "active",
+      "notes": "Redcat - micro-cap, Pentagon blue UAS list"
     }
   ],
   "portfolio": {
@@ -634,6 +683,71 @@
         "triggered_at": null,
         "status": "active",
         "notes": "Strong momentum but extended at 041. RSI 65.5. Better entry at 63 or 40 (SMA50)."
+      },
+      {
+        "id": "XAR_buy_signal_9500",
+        "ticker": "XAR",
+        "alert_type": "buy_signal",
+        "price": 95.0,
+        "shares": null,
+        "action": "buy",
+        "message": "Wait for breakout above recent high or 00 for confirmation",
+        "created_at": "2026-05-21T22:48:41.486041",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "RSI neutral, 50-day MA sloping down but higher lows forming"
+      },
+      {
+        "id": "AXON_buy_signal_32000",
+        "ticker": "AXON",
+        "alert_type": "buy_signal",
+        "price": 320.0,
+        "shares": null,
+        "action": "buy",
+        "message": "Wait for pullback to support",
+        "created_at": "2026-05-21T22:48:41.487351",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Not cheap, but quality. Counter-drone revenue growing 300%"
+      },
+      {
+        "id": "NOC_buy_signal_42000",
+        "ticker": "NOC",
+        "alert_type": "buy_signal",
+        "price": 420.0,
+        "shares": null,
+        "action": "buy",
+        "message": "Oversold RSI bounce",
+        "created_at": "2026-05-21T22:48:41.488776",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Down 30% from highs. RSI at lows where it historically bounces"
+      },
+      {
+        "id": "LHX_buy_signal_32000",
+        "ticker": "LHX",
+        "alert_type": "buy_signal",
+        "price": 320.0,
+        "shares": null,
+        "action": "buy",
+        "message": "Wait for 20 breakout",
+        "created_at": "2026-05-21T22:48:41.490193",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Consolidating. Need volume confirmation above 20"
+      },
+      {
+        "id": "KTOS_buy_signal_1800",
+        "ticker": "KTOS",
+        "alert_type": "buy_signal",
+        "price": 18.0,
+        "shares": null,
+        "action": "buy",
+        "message": "Heartbeat pattern bottom",
+        "created_at": "2026-05-21T22:48:41.496230",
+        "triggered_at": null,
+        "status": "active",
+        "notes": "Down 60% YTD. Business growing but stock punished. High risk/reward"
       }
     ],
     "trailing_stops": []

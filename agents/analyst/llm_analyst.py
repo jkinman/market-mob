@@ -373,7 +373,7 @@ def _extract_json(response: str) -> dict:
 # Default LLM caller — can be overridden for testing or different providers
 def _default_llm_call(prompt: str) -> str:
     """Call LLM. Override this or pass a custom caller to analyze_stock."""
-    provider = os.getenv("LLM_PROVIDER", "ollama")
+    provider = os.getenv("LLM_PROVIDER", "openai")
 
     if provider == "ollama":
         return _call_ollama(prompt)
